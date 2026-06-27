@@ -24,15 +24,172 @@ import MenuBuilder from './components/MenuBuilder.jsx';
 import ImageManager from './components/ImageManager.jsx';
 import ExportPanel from './components/ExportPanel.jsx';
 import AIAssistant from './components/AIAssistant.jsx';
+import HouseholdMembers from './components/HouseholdMembers.jsx';
 import { MealCardDetail } from './components/MealCard.jsx';
 import './App.css';
 
-const FAMILY_MEMBERS = [
-  { id: 'samuel', label: 'Samuel' },
-  { id: 'anne-marie', label: 'Anne-Marie' },
-  { id: 'jeanne', label: 'Jeanne' },
-  { id: 'eleonore', label: 'Éléonore' },
+const DEFAULT_HOUSEHOLD_MEMBERS = [
+  {
+    id: 'member_anne_marie',
+    name: 'Anne-Marie',
+    role: 'Adulte',
+    age: 34,
+    avatarUrl: '',
+    tags: ['Sans gluten', 'Sans lactose', 'Faible FODMAP', 'Stéatose hépatique'],
+    objective: 'Manger simple et compatible avec ses besoins de santé pour se sentir bien au quotidien.',
+    heightCm: 168,
+    currentWeightKg: 64,
+    targetWeightKg: 60,
+    activityLevel: 'Modérée',
+    nutritionTargets: {
+      calories: 1600,
+      proteinG: 110,
+      carbsG: 120,
+      fatG: 55,
+      fiberG: 28,
+      hydrationL: 2,
+    },
+    restrictions: [
+      'Sans gluten',
+      'Sans lactose',
+      'Faible FODMAP',
+      'Éviter les légumineuses',
+    ],
+    healthConsiderations: [
+      {
+        label: 'Stéatose hépatique',
+        severity: 'important',
+        notes: 'À considérer dans les choix alimentaires.',
+      },
+    ],
+    preferences: {
+      likes: ['Poulet', 'Dinde', 'Saumon', 'Riz', 'Patates', 'Quinoa', 'Légumes rôtis', 'Soupes simples'],
+      dislikes: ['Légumineuses', 'Oignons crus', 'Aubergines', 'Plats trop épicés'],
+      notes: 'Préfère les lunchs froids et simples.',
+    },
+    lifestyle: {
+      schedule: 'Travail de bureau · 9h–17h',
+      lunchNeeds: 'Lunchs froids ou faciles à préparer',
+      training: '3x / semaine',
+      sleep: 'Variable',
+      cookingTime: '30 à 45 min / jour',
+    },
+    isActiveInRecommendations: true,
+  },
+  {
+    id: 'member_samuel',
+    name: 'Samuel',
+    role: 'Adulte',
+    age: 34,
+    avatarUrl: '',
+    tags: ['Haute protéine', 'Fibres'],
+    objective: 'Soutenir l’énergie, l’entraînement et une alimentation riche en protéines.',
+    heightCm: 188,
+    currentWeightKg: 121,
+    targetWeightKg: null,
+    activityLevel: 'Active',
+    nutritionTargets: {
+      calories: 2400,
+      proteinG: 145,
+      carbsG: 250,
+      fatG: 50,
+      fiberG: 35,
+      hydrationL: 2.5,
+    },
+    restrictions: [],
+    healthConsiderations: [],
+    preferences: {
+      likes: ['Poulet', 'Œufs', 'Riz', 'Patates', 'Légumes', 'Repas protéinés'],
+      dislikes: [],
+      notes: 'Prioriser les protéines et les fibres.',
+    },
+    lifestyle: {
+      schedule: 'Travail variable',
+      lunchNeeds: 'Lunchs efficaces et soutenants',
+      training: 'Cardio + musculation',
+      sleep: 'À optimiser',
+      cookingTime: 'Variable',
+    },
+    isActiveInRecommendations: true,
+  },
+  {
+    id: 'member_jeanne',
+    name: 'Jeanne',
+    role: 'Enfant',
+    age: 6,
+    avatarUrl: '',
+    tags: ['Préférences enfant'],
+    objective: 'Prévoir des repas simples, rassasiants et adaptés aux goûts d’enfant.',
+    heightCm: null,
+    currentWeightKg: null,
+    targetWeightKg: null,
+    activityLevel: 'Enfant active',
+    nutritionTargets: {
+      calories: null,
+      proteinG: null,
+      carbsG: null,
+      fatG: null,
+      fiberG: null,
+      hydrationL: null,
+    },
+    restrictions: [],
+    healthConsiderations: [],
+    preferences: {
+      likes: ['Repas simples', 'Fruits', 'Pâtes', 'Poulet'],
+      dislikes: [],
+      notes: 'Adapter les portions et garder des options simples.',
+    },
+    lifestyle: {
+      schedule: 'École / garderie',
+      lunchNeeds: 'Lunchs enfant compatibles',
+      training: '',
+      sleep: '',
+      cookingTime: '',
+    },
+    isActiveInRecommendations: true,
+  },
+  {
+    id: 'member_eleonore',
+    name: 'Éléonore',
+    role: 'Enfant',
+    age: 2,
+    avatarUrl: '',
+    tags: ['Portions adaptées'],
+    objective: 'Prévoir des portions simples, sécuritaires et adaptées à son âge.',
+    heightCm: null,
+    currentWeightKg: null,
+    targetWeightKg: null,
+    activityLevel: 'Jeune enfant',
+    nutritionTargets: {
+      calories: null,
+      proteinG: null,
+      carbsG: null,
+      fatG: null,
+      fiberG: null,
+      hydrationL: null,
+    },
+    restrictions: [],
+    healthConsiderations: [],
+    preferences: {
+      likes: ['Textures simples', 'Fruits', 'Repas doux'],
+      dislikes: [],
+      notes: 'Portions réduites, textures adaptées.',
+    },
+    lifestyle: {
+      schedule: 'Routine jeune enfant',
+      lunchNeeds: 'Portions adaptées',
+      training: '',
+      sleep: '',
+      cookingTime: '',
+    },
+    isActiveInRecommendations: true,
+  },
 ];
+
+const FAMILY_MEMBERS = DEFAULT_HOUSEHOLD_MEMBERS.map((member) => ({
+  id: member.id,
+  label: member.name,
+}));
 
 const MEAL_TYPES = [
   { id: 'dejeuner', label: 'Déjeuner' },
@@ -67,6 +224,7 @@ const TABS = [
   { key: 'grocery', label: 'Épicerie', icon: '🛒' },
   { key: 'prep', label: 'Meal prep', icon: '🧑‍🍳' },
   { key: 'builder', label: 'Créer un menu', icon: '✏️' },
+  { key: 'members', label: 'Membres du logis', icon: '👨‍👩‍👧‍👧' },
   { key: 'images', label: 'Images', icon: '🖼' },
   { key: 'ai', label: 'Assistant AI', icon: '✨' },
   { key: 'backup', label: 'Sauvegarde', icon: '💾' },
@@ -113,6 +271,7 @@ export default function App() {
         meals: saved.meals || [],
         images: saved.images || {},
         groceryChecks: saved.groceryChecks || saved.checkedItems || {},
+        householdMembers: saved.householdMembers || DEFAULT_HOUSEHOLD_MEMBERS,
         activeMenuId: saved.activeMenuId || null,
       };
     }
@@ -125,6 +284,7 @@ export default function App() {
       meals: [],
       images: {},
       groceryChecks: {},
+      householdMembers: DEFAULT_HOUSEHOLD_MEMBERS,
     };
   });
   const [tab, setTab] = useState('menu');
@@ -141,6 +301,7 @@ export default function App() {
     activeMenuId = null,
     images = {},
     groceryChecks = {},
+    householdMembers = DEFAULT_HOUSEHOLD_MEMBERS,
   } = state || {};
 
   const mealsById = useMemo(
@@ -273,6 +434,70 @@ export default function App() {
         prev.activeMenuId === id ? menus[0]?.id ?? null : prev.activeMenuId;
       return { ...prev, menus, activeMenuId };
     });
+
+      // ---- Membres du logis ----
+  const handleUpdateHouseholdMember = (memberId, updates) => {
+    setState((prev) => ({
+      ...prev,
+      householdMembers: (prev.householdMembers || DEFAULT_HOUSEHOLD_MEMBERS).map((member) =>
+        member.id === memberId
+          ? {
+              ...member,
+              ...updates,
+            }
+          : member
+      ),
+    }));
+  };
+
+  const handleAddHouseholdMember = () => {
+    const newMember = {
+      id: `member_${Date.now()}`,
+      name: 'Nouveau membre',
+      role: 'Membre du logis',
+      age: '',
+      avatarUrl: '',
+      tags: [],
+      objective: '',
+      heightCm: null,
+      currentWeightKg: null,
+      targetWeightKg: null,
+      activityLevel: '',
+      nutritionTargets: {
+        calories: null,
+        proteinG: null,
+        carbsG: null,
+        fatG: null,
+        fiberG: null,
+        hydrationL: null,
+      },
+      restrictions: [],
+      healthConsiderations: [],
+      preferences: {
+        likes: [],
+        dislikes: [],
+        notes: '',
+      },
+      lifestyle: {
+        schedule: '',
+        lunchNeeds: '',
+        training: '',
+        sleep: '',
+        cookingTime: '',
+      },
+      isActiveInRecommendations: true,
+    };
+
+    setState((prev) => ({
+      ...prev,
+      householdMembers: [
+        ...(prev.householdMembers || DEFAULT_HOUSEHOLD_MEMBERS),
+        newMember,
+      ],
+    }));
+
+    return newMember.id;
+  };
 
   // ---- Images ----
   const handleSetImage = (mealId, dataURL) =>
@@ -488,6 +713,17 @@ export default function App() {
             onDuplicate={handleDuplicateMenu}
             onRename={handleRenameMenu}
             onDelete={handleDeleteMenu}
+          />
+        )}
+
+{tab === 'members' && (
+          <HouseholdMembers
+            members={householdMembers}
+            meals={meals}
+            menus={menus}
+            activeMenu={activeMenu}
+            onAddMember={handleAddHouseholdMember}
+            onUpdateMember={handleUpdateHouseholdMember}
           />
         )}
 
