@@ -381,48 +381,59 @@ export default function App() {
   const selectedMeal = selectedMealId ? mealsById[selectedMealId] : null;
 
   return (
-    <div className="app">
-      <header className="app-header no-print">
-        <div className="app-header__brand">
-          <span className="app-header__logo" aria-hidden="true">
-            🍂
-          </span>
-          <div>
-            <h1 className="app-header__title">Cuisine de la famille</h1>
-            <p className="app-header__sub">
-              Samuel · Anne-Marie · Jeanne · Éléonore
-            </p>
-          </div>
+    <div className="hs-app">
+      <header className="hs-topbar no-print">
+        <div className="hs-brand">
+          <img
+            src="/brand/Hearthsmith_Full logo.png"
+            alt="HearthSmith"
+            className="hs-brand__crest"
+          />
+
+          <img
+            src="/brand/Hearthsmith_Wordmark.png"
+            alt="HearthSmith"
+            className="hs-brand__wordmark"
+          />
         </div>
 
-        <label className="app-header__menu">
-          <span>Menu actif</span>
-          <select
-            value={activeMenu?.id || ''}
-            onChange={(e) => update({ activeMenuId: e.target.value })}
-          >
-            {menus.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="hs-family-switcher">
+          <div className="hs-family-avatar" aria-hidden="true">
+            👩
+          </div>
+
+          <div className="hs-family-switcher__text">
+            <strong>Famille Hearthsmith</strong>
+            <span>👥 {FAMILY_MEMBERS.length} membres</span>
+          </div>
+
+          <button className="hs-icon-button" type="button" aria-label="Changer de famille">
+           ⌄
+          </button>
+
+          <button className="hs-settings-button" type="button" aria-label="Paramètres">
+            ⚙
+          </button>
+        </div>
       </header>
 
-      <nav className="app-nav no-print">
+      <nav className="hs-nav no-print" aria-label="Navigation principale">
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={`app-nav__btn ${tab === t.key ? 'is-active' : ''}`}
+            type="button"
+            className={`hs-nav__btn ${tab === t.key ? 'is-active' : ''}`}
             onClick={() => setTab(t.key)}
           >
-            <span aria-hidden="true">{t.icon}</span> {t.label}
+            <span className="hs-nav__icon" aria-hidden="true">
+              {t.icon}
+            </span>
+            <span>{t.label}</span>
           </button>
         ))}
       </nav>
 
-      <main className="app-main">
+      <main className="hs-main">
         {tab === 'menu' && (
           <WeeklyMenu
             menu={activeMenu}
@@ -432,6 +443,7 @@ export default function App() {
             onPrint={handlePrint}
           />
         )}
+
         {tab === 'library' && (
           <MealLibrary
             meals={meals}
@@ -446,6 +458,7 @@ export default function App() {
             onClearImage={handleClearImage}
           />
         )}
+
         {tab === 'grocery' && (
           <GroceryList
             groceryList={groceryList}
@@ -455,6 +468,7 @@ export default function App() {
             onPrint={handlePrint}
           />
         )}
+
         {tab === 'prep' && (
           <MealPrep
             menu={activeMenu}
@@ -462,6 +476,7 @@ export default function App() {
             onPrint={handlePrint}
           />
         )}
+
         {tab === 'builder' && (
           <MenuBuilder
             menus={menus}
@@ -474,6 +489,7 @@ export default function App() {
             onDelete={handleDeleteMenu}
           />
         )}
+
         {tab === 'images' && (
           <ImageManager
             meals={meals}
@@ -506,10 +522,10 @@ export default function App() {
         )}
       </main>
 
-      <footer className="app-footer no-print">
+      <footer className="hs-footer no-print">
         <p>
-          Planificateur de repas familial · données enregistrées localement dans
-          ton navigateur
+          Astuce : HearthSmith garde vos menus, recettes, images et listes en mémoire
+          locale dans votre navigateur.
         </p>
       </footer>
 
