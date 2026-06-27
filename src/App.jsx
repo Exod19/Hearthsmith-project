@@ -25,6 +25,7 @@ import ImageManager from './components/ImageManager.jsx';
 import ExportPanel from './components/ExportPanel.jsx';
 import AIAssistant from './components/AIAssistant.jsx';
 import { MealCardDetail } from './components/MealCard.jsx';
+import './App.css';
 
 const FAMILY_MEMBERS = [
   { id: 'samuel', label: 'Samuel' },
