@@ -102,17 +102,20 @@ button {
 }
 
 .hs-brand__crest {
-  width: 86px;
-  height: 86px;
+  width: clamp(52px, 6vw, 82px);
+  height: clamp(52px, 6vw, 82px);
+  max-width: 82px;
+  max-height: 82px;
   object-fit: contain;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
   flex: 0 0 auto;
 }
 
 .hs-brand__wordmark {
-  height: 58px;
   width: auto;
-  max-width: min(360px, 38vw);
+  height: clamp(32px, 4vw, 56px);
+  max-width: min(320px, 42vw);
+  max-height: 56px;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
 }
@@ -383,12 +386,15 @@ button {
   }
 
   .hs-brand__crest {
-    width: 62px;
-    height: 62px;
+    width: 48px;
+    height: 48px;
+    max-width: 48px;
+    max-height: 48px;
   }
 
   .hs-brand__wordmark {
-    height: 42px;
+    height: 34px;
+    max-height: 34px;
     max-width: 46vw;
   }
 
