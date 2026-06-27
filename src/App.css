@@ -102,10 +102,10 @@ button {
 }
 
 .hs-brand__crest {
-  width: clamp(52px, 6vw, 82px);
-  height: clamp(52px, 6vw, 82px);
-  max-width: 82px;
-  max-height: 82px;
+  width: clamp(44px, 5vw, 68px);
+  height: clamp(44px, 5vw, 68px);
+  max-width: 68px;
+  max-height: 68px;
   object-fit: contain;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
   flex: 0 0 auto;
@@ -113,9 +113,9 @@ button {
 
 .hs-brand__wordmark {
   width: auto;
-  height: clamp(32px, 4vw, 56px);
-  max-width: min(320px, 42vw);
-  max-height: 56px;
+  height: clamp(28px, 3.2vw, 44px);
+  max-width: min(280px, 40vw);
+  max-height: 44px;
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
 }
@@ -386,16 +386,22 @@ button {
   }
 
   .hs-brand__crest {
-    width: 48px;
-    height: 48px;
-    max-width: 48px;
-    max-height: 48px;
+    width: clamp(44px, 5vw, 68px);
+    height: clamp(44px, 5vw, 68px);
+    max-width: 68px;
+    max-height: 68px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
+    flex: 0 0 auto;
   }
 
   .hs-brand__wordmark {
-    height: 34px;
-    max-height: 34px;
-    max-width: 46vw;
+    width: auto;
+    height: clamp(28px, 3.2vw, 44px);
+    max-width: min(280px, 40vw);
+    max-height: 44px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
   }
 
   .hs-family-switcher__text {
