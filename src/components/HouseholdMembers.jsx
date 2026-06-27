@@ -1,13 +1,93 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import './HouseholdMembers.css';
 
-const severityLabels = {
-  information: 'Information',
-  attention: 'Attention',
-  important: 'Important',
-  critical: 'Critique',
-};
+const uid = () => crypto?.randomUUID?.() || `member-${Date.now()}-${Math.random()}`;
 
-function getInitials(name = '') {
+const DEFAULT_MEMBERS = [
+  {
+    id: uid(),
+    name: 'Anne-Marie',
+    role: 'Adulte',
+    age: '34 ans',
+    avatar: '',
+    objective: 'Manger simple et compatible avec ses besoins de santé pour se sentir bien au quotidien.',
+    activeProfile: true,
+    height: '168 cm',
+    currentWeight: '64 kg',
+    targetWeight: '60 kg',
+    activity: 'Modérée',
+    nutritionGoal: 'Santé métabolique / Perte de poids',
+    calories: '1600',
+    protein: '110 g',
+    carbs: '120 g',
+    fat: '55 g',
+    fiber: '28 g',
+    hydration: '2 L',
+    restrictions: ['Sans gluten', 'Sans lactose', 'Faible FODMAP', 'Éviter les légumineuses'],
+    conditions: ['Stéatose hépatique'],
+    severity: 'Important',
+    likes: ['Poulet', 'Dinde', 'Saumon', 'Riz', 'Patates', 'Quinoa', 'Légumes rôtis', 'Soupes simples'],
+    dislikes: ['Légumineuses', 'Oignons crus', 'Aubergines', 'Plats trop épicés', 'Produits laitiers réguliers'],
+    habits: {
+      schedule: 'Travail de bureau · 9h–17h',
+      homeMeals: 'Souper + fins de semaine',
+      lunch: 'Lunchs froids ou faciles à préparer',
+      training: '3x / semaine',
+      sleep: 'Variable',
+      kitchenTime: '30 à 45 min / jour',
+      notes: 'Préfère les lunchs froids et simples.',
+    },
+    tags: ['Sans gluten', 'Sans lactose', 'Faible FODMAP', 'Stéatose hépatique'],
+  },
+  {
+    id: uid(),
+    name: 'Samuel',
+    role: 'Adulte',
+    age: '34 ans',
+    avatar: '',
+    objective: 'Atteindre ses cibles de protéines et de fibres tout en gardant des repas efficaces.',
+    activeProfile: true,
+    height: '188 cm',
+    currentWeight: '267 lb',
+    targetWeight: '',
+    activity: 'Active',
+    nutritionGoal: 'Haute protéine / recomposition',
+    calories: '2400',
+    protein: '145 g',
+    carbs: '250 g',
+    fat: '50 g',
+    fiber: '35 g',
+    hydration: '2.5 L',
+    restrictions: [],
+    conditions: [],
+    severity: 'Informationnel',
+    likes: ['Oeufs', 'Poulet', 'Riz', 'Patates', 'Cottage', 'Épinards'],
+    dislikes: [],
+    habits: {
+      schedule: 'Travail variable',
+      homeMeals: 'Déjeuner + souper',
+      lunch: 'Lunchs simples à réchauffer',
+      training: 'Cardio + musculation',
+      sleep: 'À améliorer',
+      kitchenTime: '30 à 45 min / jour',
+      notes: 'Prioriser protéines et fibres.',
+    },
+    tags: ['Haute protéine', 'Fibres'],
+  },
+];
+
+function listToText(list) {
+  return Array.isArray(list) ? list.join('\n') : '';
+}
+
+function textToList(text) {
+  return text
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getInitials(name) {
   return name
     .split(' ')
     .map((part) => part[0])
@@ -16,405 +96,532 @@ function getInitials(name = '') {
     .toUpperCase();
 }
 
-function formatTarget(value, suffix) {
-  if (value === null || value === undefined || value === '') return '—';
-  return `${value}${suffix}`;
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
-export default function HouseholdMembers({
-  members = [],
-  meals = [],
-  activeMenu = null,
-  onAddMember,
-  onUpdateMember,
-}) {
-  const [selectedMemberId, setSelectedMemberId] = useState(
-    members[0]?.id || null
+export default function HouseholdMembers() {
+  const [members, setMembers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('hearthsmith.householdMembers');
+      return saved ? JSON.parse(saved) : DEFAULT_MEMBERS;
+    } catch {
+      return DEFAULT_MEMBERS;
+    }
+  });
+
+  const [selectedId, setSelectedId] = useState(() => members[0]?.id);
+  const [editing, setEditing] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([
+    {
+      from: 'user',
+      text: 'Peux-tu analyser mon profil et me dire s’il manque quelque chose?',
+      time: '10:32',
+    },
+    {
+      from: 'ai',
+      text: 'Ton profil est déjà très complet. Tu pourrais préciser ton niveau exact de sensibilité FODMAP, tes collations préférées et ton niveau d’énergie moyen.',
+      time: '10:33',
+    },
+  ]);
+
+  const fileInputRef = useRef(null);
+
+  const selectedMember = useMemo(
+    () => members.find((member) => member.id === selectedId) || members[0],
+    [members, selectedId]
   );
 
-  const selectedMember = useMemo(() => {
-    return members.find((member) => member.id === selectedMemberId) || members[0];
-  }, [members, selectedMemberId]);
+  function persist(nextMembers) {
+    setMembers(nextMembers);
+    localStorage.setItem('hearthsmith.householdMembers', JSON.stringify(nextMembers));
+  }
 
-  const activeAlerts = useMemo(() => {
-    if (!selectedMember) return [];
+  function updateSelected(patch) {
+    const nextMembers = members.map((member) =>
+      member.id === selectedMember.id ? { ...member, ...patch } : member
+    );
+    persist(nextMembers);
+  }
 
-    const memberName = selectedMember.name || 'ce membre';
-    const restrictions = selectedMember.restrictions || [];
-
-    if (!restrictions.length && !selectedMember.healthConsiderations?.length) {
-      return [];
-    }
-
-    return [
-      {
-        id: 'alert_profile_001',
-        severity: 'important',
-        title: `Attention pour ${memberName}`,
-        message:
-          'Le menu de cette semaine pourrait contenir des repas qui entrent en conflit avec ce profil.',
-        details: restrictions.slice(0, 3),
+  function updateSelectedNested(section, patch) {
+    updateSelected({
+      [section]: {
+        ...selectedMember[section],
+        ...patch,
       },
-    ];
-  }, [selectedMember, activeMenu, meals]);
+    });
+  }
 
-  const handleAdd = () => {
-    const newId = onAddMember?.();
-    if (newId) setSelectedMemberId(newId);
-  };
+  function addMember() {
+    const newMember = {
+      id: uid(),
+      name: 'Nouveau membre',
+      role: 'Adulte',
+      age: '',
+      avatar: '',
+      objective: 'Définir l’objectif principal de ce membre.',
+      activeProfile: true,
+      height: '',
+      currentWeight: '',
+      targetWeight: '',
+      activity: '',
+      nutritionGoal: '',
+      calories: '',
+      protein: '',
+      carbs: '',
+      fat: '',
+      fiber: '',
+      hydration: '',
+      restrictions: [],
+      conditions: [],
+      severity: 'Informationnel',
+      likes: [],
+      dislikes: [],
+      habits: {
+        schedule: '',
+        homeMeals: '',
+        lunch: '',
+        training: '',
+        sleep: '',
+        kitchenTime: '',
+        notes: '',
+      },
+      tags: ['Profil à compléter'],
+    };
+
+    const nextMembers = [...members, newMember];
+    persist(nextMembers);
+    setSelectedId(newMember.id);
+    setEditing(true);
+  }
+
+  function deleteMember() {
+    if (members.length <= 1) return;
+
+    const confirmed = window.confirm(`Supprimer la fiche de ${selectedMember.name}?`);
+    if (!confirmed) return;
+
+    const nextMembers = members.filter((member) => member.id !== selectedMember.id);
+    persist(nextMembers);
+    setSelectedId(nextMembers[0]?.id);
+    setEditing(false);
+  }
+
+  async function handleAvatarUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const dataUrl = await readImageAsDataUrl(file);
+    updateSelected({ avatar: dataUrl });
+
+    event.target.value = '';
+  }
+
+  function sendChatMessage(text = chatInput) {
+    const clean = text.trim();
+    if (!clean) return;
+
+    const now = new Date();
+    const time = now.toLocaleTimeString('fr-CA', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    setChatMessages((prev) => [
+      ...prev,
+      { from: 'user', text: clean, time },
+      {
+        from: 'ai',
+        text: 'Je l’ai noté. Lorsque le connecteur IA sera branché, je pourrai ajuster automatiquement la fiche, les repas recommandés et le menu hebdo.',
+        time,
+      },
+    ]);
+
+    setChatInput('');
+  }
 
   if (!selectedMember) {
     return (
-      <section className="hs-members-page">
-        <div className="hs-members-empty hs-panel">
-          <h1 className="hs-page-title">Membres du logis</h1>
-          <p className="hs-page-kicker">
-            Créez un premier profil pour personnaliser vos menus.
-          </p>
-          <button className="hs-button" type="button" onClick={handleAdd}>
-            + Ajouter un membre
-          </button>
-        </div>
+      <section className="hs-page">
+        <button className="hs-btn hs-btn-primary" onClick={addMember}>
+          + Ajouter un membre
+        </button>
       </section>
     );
   }
 
   return (
-    <section className="hs-members-page">
-      <header className="hs-members-header hs-card">
+    <section className="hs-household-page">
+      <header className="hs-household-header">
         <div>
-          <h1 className="hs-page-title">
-            <span aria-hidden="true">🏠</span> Membres du logis
-          </h1>
-          <p className="hs-page-kicker">
-            Gérez les portraits de chaque membre pour des recommandations personnalisées.
-          </p>
+          <div className="hs-title-row">
+            <span className="hs-title-icon">⌂</span>
+            <h1>Membres du logis</h1>
+          </div>
+          <p>Gérez les profils de chaque membre de votre logis pour des recommandations personnalisées.</p>
         </div>
 
-        <div className="hs-members-header__actions">
-          <button className="hs-button" type="button" onClick={handleAdd}>
-            + Ajouter un membre
+        <div className="hs-header-actions">
+          <button className="hs-btn hs-btn-primary" onClick={addMember}>
+            ✚ Ajouter un membre
           </button>
-          <button className="hs-button hs-button--secondary" type="button">
+          <button className="hs-help-btn" title="Aide">
             ?
           </button>
         </div>
       </header>
 
-      <div className="hs-members-layout">
-        <aside className="hs-members-sidebar hs-panel">
-          <h2 className="hs-section-title">Membres du logis</h2>
+      <div className="hs-household-layout">
+        <aside className="hs-member-list hs-scroll-card">
+          <h2>Membres du logis</h2>
 
-          <div className="hs-member-list">
+          <div className="hs-member-stack">
             {members.map((member) => (
               <button
                 key={member.id}
-                type="button"
-                className={`hs-member-list-item ${
-                  selectedMember?.id === member.id ? 'is-active' : ''
-                }`}
-                onClick={() => setSelectedMemberId(member.id)}
+                className={`hs-member-card ${member.id === selectedMember.id ? 'is-active' : ''}`}
+                onClick={() => {
+                  setSelectedId(member.id);
+                  setEditing(false);
+                }}
               >
-                <div className="hs-member-list-item__avatar">
-                  {member.avatarUrl ? (
-                    <img src={member.avatarUrl} alt={member.name} />
-                  ) : (
-                    <span>{getInitials(member.name)}</span>
-                  )}
-                </div>
-
-                <div className="hs-member-list-item__content">
+                <Avatar member={member} size="small" />
+                <span>
                   <strong>{member.name}</strong>
-                  <span>
+                  <small>
                     {member.role}
-                    {member.age ? ` · ${member.age} ans` : ''}
-                  </span>
-
-                  <div className="hs-member-tags">
+                    {member.age ? ` · ${member.age}` : ''}
+                  </small>
+                  <span className="hs-tag-row">
                     {(member.tags || []).slice(0, 3).map((tag) => (
-                      <span className="hs-badge" key={tag}>
-                        {tag}
-                      </span>
+                      <em key={tag}>{tag}</em>
                     ))}
-                  </div>
-                </div>
+                  </span>
+                </span>
               </button>
             ))}
 
-            <button
-              type="button"
-              className="hs-member-add-card"
-              onClick={handleAdd}
-            >
+            <button className="hs-add-member-card" onClick={addMember}>
               <span>＋</span>
               Ajouter un membre
             </button>
           </div>
         </aside>
 
-        <main className="hs-members-main">
-          <section className="hs-member-hero hs-card">
-            <div className="hs-member-portrait">
-              {selectedMember.avatarUrl ? (
-                <img src={selectedMember.avatarUrl} alt={selectedMember.name} />
-              ) : (
-                <span>{getInitials(selectedMember.name)}</span>
-              )}
-              <button type="button" className="hs-member-portrait__camera">
+        <main className="hs-profile-main">
+          <section className="hs-hero-card hs-frame-card">
+            <div className="hs-profile-portrait-wrap">
+              <Avatar member={selectedMember} size="large" />
+              <button className="hs-camera-btn" onClick={() => fileInputRef.current?.click()}>
                 📷
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleAvatarUpload}
+              />
             </div>
 
-            <div className="hs-member-hero__content">
-              <h2>{selectedMember.name}</h2>
-              <p>
-                {selectedMember.role}
-                {selectedMember.age ? ` · ${selectedMember.age} ans` : ''}
-              </p>
+            <div className="hs-profile-heading">
+              {editing ? (
+                <>
+                  <input
+                    className="hs-title-input"
+                    value={selectedMember.name}
+                    onChange={(event) => updateSelected({ name: event.target.value })}
+                  />
+                  <div className="hs-inline-fields">
+                    <input
+                      value={selectedMember.role}
+                      onChange={(event) => updateSelected({ role: event.target.value })}
+                      placeholder="Rôle"
+                    />
+                    <input
+                      value={selectedMember.age}
+                      onChange={(event) => updateSelected({ age: event.target.value })}
+                      placeholder="Âge"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2>{selectedMember.name}</h2>
+                  <p>
+                    {selectedMember.role}
+                    {selectedMember.age ? ` · ${selectedMember.age}` : ''}
+                  </p>
+                </>
+              )}
 
-              <div className="hs-member-objective">
-                <span aria-hidden="true">🎯</span>
-                <div>
-                  <strong>Objectif principal</strong>
-                  <p>{selectedMember.objective || 'Aucun objectif défini.'}</p>
-                </div>
+              <div className="hs-objective">
+                <strong>Objectif principal</strong>
+                {editing ? (
+                  <textarea
+                    value={selectedMember.objective}
+                    onChange={(event) => updateSelected({ objective: event.target.value })}
+                  />
+                ) : (
+                  <p>{selectedMember.objective}</p>
+                )}
               </div>
             </div>
 
-            <div className="hs-member-hero__actions">
-              <button
-                className="hs-button hs-button--secondary"
-                type="button"
-                onClick={() =>
-                  onUpdateMember?.(selectedMember.id, {
-                    name: prompt('Nom du membre', selectedMember.name) || selectedMember.name,
-                  })
-                }
-              >
-                ✎ Modifier la fiche
+            <div className="hs-profile-actions">
+              <button className="hs-btn hs-btn-parchment" onClick={() => setEditing((value) => !value)}>
+                ✎ {editing ? 'Terminer' : 'Modifier la fiche'}
               </button>
-              <button className="hs-button" type="button">
+
+              {editing && (
+                <>
+                  <button className="hs-btn hs-btn-danger" onClick={deleteMember}>
+                    Supprimer
+                  </button>
+                  {selectedMember.avatar && (
+                    <button className="hs-btn hs-btn-ghost" onClick={() => updateSelected({ avatar: '' })}>
+                      Retirer la photo
+                    </button>
+                  )}
+                </>
+              )}
+
+              <button className="hs-btn hs-btn-primary" onClick={() => sendChatMessage('Analyse ce profil et propose des améliorations.')}>
                 💬 Discuter avec l’IA
               </button>
 
-              <div className="hs-member-active-status">
-                <span className="hs-status-dot" />
-                <div>
-                  <strong>Profil actif</strong>
-                  <p>Utilisé dans les recommandations de menus et recettes.</p>
-                </div>
+              <div className="hs-active-profile">
+                <span />
+                Profil actif
+                <small>Utilisé dans les recommandations de menus et de recettes.</small>
               </div>
             </div>
           </section>
 
-          <section className="hs-member-grid">
-            <article className="hs-card">
-              <h3 className="hs-section-title">Données physiques & nutritionnelles</h3>
+          <section className="hs-profile-grid">
+            <Panel title="Données physiques & nutritionnelles" icon="⚕">
+              <FieldGrid>
+                <EditableField label="Grandeur" value={selectedMember.height} editing={editing} onChange={(value) => updateSelected({ height: value })} />
+                <EditableField label="Poids actuel" value={selectedMember.currentWeight} editing={editing} onChange={(value) => updateSelected({ currentWeight: value })} />
+                <EditableField label="Poids cible" value={selectedMember.targetWeight} editing={editing} onChange={(value) => updateSelected({ targetWeight: value })} />
+                <EditableField label="Activité" value={selectedMember.activity} editing={editing} onChange={(value) => updateSelected({ activity: value })} />
+                <EditableField label="Objectif" value={selectedMember.nutritionGoal} editing={editing} onChange={(value) => updateSelected({ nutritionGoal: value })} />
+              </FieldGrid>
 
-              <dl className="hs-data-list">
-                <div>
-                  <dt>Grandeur</dt>
-                  <dd>{formatTarget(selectedMember.heightCm, ' cm')}</dd>
-                </div>
-                <div>
-                  <dt>Poids actuel</dt>
-                  <dd>{formatTarget(selectedMember.currentWeightKg, ' kg')}</dd>
-                </div>
-                <div>
-                  <dt>Poids cible</dt>
-                  <dd>{formatTarget(selectedMember.targetWeightKg, ' kg')}</dd>
-                </div>
-                <div>
-                  <dt>Activité</dt>
-                  <dd>{selectedMember.activityLevel || '—'}</dd>
-                </div>
-              </dl>
-
-              <h4>Cibles nutritionnelles <span>par jour</span></h4>
-
-              <div className="hs-nutrition-targets">
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.calories, '')}</strong>
-                  <span>Calories</span>
-                </div>
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.proteinG, ' g')}</strong>
-                  <span>Protéines</span>
-                </div>
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.carbsG, ' g')}</strong>
-                  <span>Glucides</span>
-                </div>
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.fatG, ' g')}</strong>
-                  <span>Lipides</span>
-                </div>
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.fiberG, ' g')}</strong>
-                  <span>Fibres</span>
-                </div>
-                <div>
-                  <strong>{formatTarget(selectedMember.nutritionTargets?.hydrationL, ' L')}</strong>
-                  <span>Hydratation</span>
-                </div>
+              <h4>Cibles nutritionnelles <small>par jour</small></h4>
+              <div className="hs-macro-row">
+                <Macro label="Calories" value={selectedMember.calories} editing={editing} onChange={(value) => updateSelected({ calories: value })} />
+                <Macro label="Protéines" value={selectedMember.protein} editing={editing} onChange={(value) => updateSelected({ protein: value })} />
+                <Macro label="Glucides" value={selectedMember.carbs} editing={editing} onChange={(value) => updateSelected({ carbs: value })} />
+                <Macro label="Lipides" value={selectedMember.fat} editing={editing} onChange={(value) => updateSelected({ fat: value })} />
+                <Macro label="Fibres" value={selectedMember.fiber} editing={editing} onChange={(value) => updateSelected({ fiber: value })} />
+                <Macro label="Hydratation" value={selectedMember.hydration} editing={editing} onChange={(value) => updateSelected({ hydration: value })} />
               </div>
+            </Panel>
 
-              <button className="hs-button hs-button--secondary" type="button">
-                ✨ Compléter / ajuster avec l’IA
-              </button>
-            </article>
+            <Panel title="Santé, restrictions & précautions" icon="🛡">
+              <EditableList
+                title="Restrictions alimentaires"
+                values={selectedMember.restrictions}
+                editing={editing}
+                onChange={(values) => updateSelected({ restrictions: values })}
+              />
 
-            <article className="hs-card">
-              <h3 className="hs-section-title">Santé, restrictions & précautions</h3>
+              <EditableList
+                title="Conditions à considérer"
+                values={selectedMember.conditions}
+                editing={editing}
+                onChange={(values) => updateSelected({ conditions: values })}
+                danger
+              />
 
-              <h4>Restrictions alimentaires</h4>
-              <ul className="hs-simple-list">
-                {(selectedMember.restrictions || []).map((restriction) => (
-                  <li key={restriction}>{restriction}</li>
-                ))}
-              </ul>
-
-              <h4>Conditions à considérer</h4>
-              <div className="hs-health-list">
-                {(selectedMember.healthConsiderations || []).map((item) => (
-                  <div className="hs-health-item" key={item.label}>
-                    <span className={`hs-severity-dot is-${item.severity}`} />
-                    <div>
-                      <strong>{item.label}</strong>
-                      <p>{item.notes}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="hs-severity">
+                <strong>Niveau de sévérité</strong>
+                {editing ? (
+                  <select
+                    value={selectedMember.severity}
+                    onChange={(event) => updateSelected({ severity: event.target.value })}
+                  >
+                    <option>Informationnel</option>
+                    <option>Important</option>
+                    <option>Critique</option>
+                  </select>
+                ) : (
+                  <span>{selectedMember.severity}</span>
+                )}
               </div>
+            </Panel>
 
-              <button className="hs-button hs-button--secondary" type="button">
-                Modifier
-              </button>
-            </article>
-
-            <article className="hs-card">
-              <h3 className="hs-section-title">Préférences alimentaires</h3>
-
-              <div className="hs-preferences-columns">
-                <div>
-                  <h4>Aime</h4>
-                  <ul className="hs-check-list">
-                    {(selectedMember.preferences?.likes || []).map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4>N’aime pas / éviter</h4>
-                  <ul className="hs-warning-list">
-                    {(selectedMember.preferences?.dislikes || []).map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+            <Panel title="Préférences alimentaires" icon="❤">
+              <div className="hs-two-columns">
+                <EditableList
+                  title="Aime"
+                  values={selectedMember.likes}
+                  editing={editing}
+                  onChange={(values) => updateSelected({ likes: values })}
+                  positive
+                />
+                <EditableList
+                  title="N’aime pas / éviter"
+                  values={selectedMember.dislikes}
+                  editing={editing}
+                  onChange={(values) => updateSelected({ dislikes: values })}
+                  danger
+                />
               </div>
+            </Panel>
 
-              {selectedMember.preferences?.notes && (
-                <p className="hs-member-note">{selectedMember.preferences.notes}</p>
-              )}
-            </article>
-
-            <article className="hs-card">
-              <h3 className="hs-section-title">Habitudes de vie & mode de vie</h3>
-
-              <dl className="hs-data-list">
-                <div>
-                  <dt>Horaire</dt>
-                  <dd>{selectedMember.lifestyle?.schedule || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Lunch à prévoir</dt>
-                  <dd>{selectedMember.lifestyle?.lunchNeeds || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Entraînement</dt>
-                  <dd>{selectedMember.lifestyle?.training || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Sommeil</dt>
-                  <dd>{selectedMember.lifestyle?.sleep || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Temps cuisine</dt>
-                  <dd>{selectedMember.lifestyle?.cookingTime || '—'}</dd>
-                </div>
-              </dl>
-            </article>
+            <Panel title="Habitudes de vie & mode de vie" icon="☼">
+              <FieldGrid>
+                <EditableField label="Horaire" value={selectedMember.habits.schedule} editing={editing} onChange={(value) => updateSelectedNested('habits', { schedule: value })} />
+                <EditableField label="Repas à la maison" value={selectedMember.habits.homeMeals} editing={editing} onChange={(value) => updateSelectedNested('habits', { homeMeals: value })} />
+                <EditableField label="Lunch à prévoir" value={selectedMember.habits.lunch} editing={editing} onChange={(value) => updateSelectedNested('habits', { lunch: value })} />
+                <EditableField label="Entraînement" value={selectedMember.habits.training} editing={editing} onChange={(value) => updateSelectedNested('habits', { training: value })} />
+                <EditableField label="Sommeil" value={selectedMember.habits.sleep} editing={editing} onChange={(value) => updateSelectedNested('habits', { sleep: value })} />
+                <EditableField label="Temps en cuisine" value={selectedMember.habits.kitchenTime} editing={editing} onChange={(value) => updateSelectedNested('habits', { kitchenTime: value })} />
+                <EditableField label="Notes" value={selectedMember.habits.notes} editing={editing} onChange={(value) => updateSelectedNested('habits', { notes: value })} />
+              </FieldGrid>
+            </Panel>
           </section>
 
-          {activeAlerts.length > 0 && (
-            <section className="hs-member-alert hs-card">
-              <div className="hs-member-alert__icon">⚠️</div>
-              <div>
-                <strong>{activeAlerts[0].title}</strong>
-                <p>{activeAlerts[0].message}</p>
-              </div>
-              <button className="hs-button hs-button--secondary" type="button">
-                Voir les détails →
-              </button>
-            </section>
-          )}
-        </main>
-
-        <aside className="hs-profile-assistant hs-panel">
-          <div className="hs-profile-assistant__header">
+          <section className="hs-warning-banner">
+            <span className="hs-warning-icon">⚠</span>
             <div>
-              <h2 className="hs-section-title">Assistant du profil</h2>
-              <strong>{selectedMember.name}</strong>
+              <strong>Attention pour {selectedMember.name}</strong>
               <p>
-                L’IA connaît son profil et peut proposer des ajustements personnalisés.
+                Le menu de cette semaine pourrait contenir des repas qui entrent en conflit avec ce profil.
               </p>
             </div>
-            <button type="button" className="hs-icon-button-dark">
-              ×
-            </button>
-          </div>
+            <button className="hs-btn hs-btn-parchment">Voir les détails ›</button>
+          </section>
 
-          <div className="hs-profile-chat">
-            <div className="hs-profile-message is-user">
-              Peux-tu analyser mon profil et me dire s’il manque quelque chose?
-              <span>10:32</span>
-            </div>
+          <p className="hs-tip">✧ Conseil : plus les profils sont complets, meilleures seront les suggestions de menus et de recettes pour votre logis.</p>
+        </main>
 
-            <div className="hs-profile-message is-ai">
-              Ton profil est déjà très complet. Je pourrais encore préciser le niveau de sensibilité FODMAP, les collations préférées et le niveau d’énergie.
-              <span>10:33</span>
-            </div>
-
-            <div className="hs-profile-message is-user">
-              Ajoute que je préfère les lunchs froids et sans réchauffe.
-              <span>10:34</span>
-            </div>
-
-            <div className="hs-profile-message is-ai">
-              C’est ajouté au profil.
-              <span>10:35</span>
+        <aside className="hs-ai-panel hs-frame-card">
+          <div className="hs-ai-header">
+            <span className="hs-ai-orb">✦</span>
+            <div>
+              <h2>Assistant du profil</h2>
+              <strong>{selectedMember.name}</strong>
+              <p>L’IA connaît son profil et peut proposer des ajustements personnalisés.</p>
             </div>
           </div>
 
-          <div className="hs-profile-chat-input">
-            <input type="text" placeholder="Écrire un message..." />
-            <button type="button">➤</button>
+          <div className="hs-chat-log">
+            {chatMessages.map((message, index) => (
+              <div key={`${message.from}-${index}`} className={`hs-message ${message.from}`}>
+                <p>{message.text}</p>
+                <small>{message.time}</small>
+              </div>
+            ))}
           </div>
 
-          <div className="hs-profile-actions">
-            <button type="button">🍲 Proposer des repas compatibles</button>
-            <button type="button">⚖️ Ajuster mes macros</button>
-            <button type="button">✨ Vérifier ce menu pour moi</button>
-            <button type="button">🥣 Suggestions de collations</button>
+          <form
+            className="hs-chat-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendChatMessage();
+            }}
+          >
+            <input
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              placeholder="Écrire un message..."
+            />
+            <button type="submit">➤</button>
+          </form>
+
+          <div className="hs-ai-actions">
+            <button onClick={() => sendChatMessage('Propose des repas compatibles avec ce profil.')}>🍲 Proposer des repas compatibles</button>
+            <button onClick={() => sendChatMessage('Ajuste mes macros selon mon objectif.')}>⚖ Ajuster mes macros</button>
+            <button onClick={() => sendChatMessage('Vérifie le menu de la semaine pour ce profil.')}>✨ Vérifier ce menu pour moi</button>
+            <button onClick={() => sendChatMessage('Suggère des collations compatibles.')}>🍎 Suggestions de collations</button>
           </div>
         </aside>
       </div>
-
-      <p className="hs-members-tip">
-        ✨ Conseil : plus les profils sont complets, meilleures seront les suggestions de menus et de recettes pour votre logis.
-      </p>
     </section>
+  );
+}
+
+function Avatar({ member, size = 'small' }) {
+  return (
+    <span className={`hs-avatar hs-avatar-${size}`}>
+      {member.avatar ? <img src={member.avatar} alt={member.name} /> : <strong>{getInitials(member.name)}</strong>}
+    </span>
+  );
+}
+
+function Panel({ title, icon, children }) {
+  return (
+    <section className="hs-panel hs-frame-card">
+      <h3>
+        <span>{icon}</span>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function FieldGrid({ children }) {
+  return <div className="hs-field-grid">{children}</div>;
+}
+
+function EditableField({ label, value, editing, onChange }) {
+  return (
+    <label className="hs-field">
+      <span>{label}</span>
+      {editing ? (
+        <input value={value || ''} onChange={(event) => onChange(event.target.value)} />
+      ) : (
+        <strong>{value || '—'}</strong>
+      )}
+    </label>
+  );
+}
+
+function Macro({ label, value, editing, onChange }) {
+  return (
+    <label className="hs-macro">
+      <span>✦</span>
+      {editing ? (
+        <input value={value || ''} onChange={(event) => onChange(event.target.value)} />
+      ) : (
+        <strong>{value || '—'}</strong>
+      )}
+      <small>{label}</small>
+    </label>
+  );
+}
+
+function EditableList({ title, values, editing, onChange, positive = false, danger = false }) {
+  return (
+    <div className="hs-list-block">
+      <h4>{title}</h4>
+
+      {editing ? (
+        <textarea
+          value={listToText(values)}
+          onChange={(event) => onChange(textToList(event.target.value))}
+          placeholder="Un élément par ligne"
+        />
+      ) : (
+        <ul className={positive ? 'is-positive' : danger ? 'is-danger' : ''}>
+          {(values || []).length ? (
+            values.map((item) => <li key={item}>{item}</li>)
+          ) : (
+            <li className="is-empty">Aucun élément</li>
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
