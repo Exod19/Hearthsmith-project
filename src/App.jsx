@@ -609,19 +609,19 @@ export default function App() {
   return (
     <div className="hs-app">
       <header className="hs-topbar no-print">
-        <div className="hs-brand">
-          <img
-            src="/brand/Hearthsmith_Full logo.png"
-            alt="HearthSmith"
-            className="hs-brand__crest"
-          />
+      <div className="hs-brand">
+  <img
+    src="/brand/Hearthsmith_Full logo.png"
+    alt="HearthSmith"
+    className="hs-brand__crest"
+  />
 
-          <img
-            src="/brand/Hearthsmith_Wordmark.png"
-            alt="HearthSmith"
-            className="hs-brand__wordmark"
-          />
-        </div>
+  <img
+    src="/brand/Hearthsmith_Wordmark.png"
+    alt="HearthSmith"
+    className="hs-brand__wordmark"
+  />
+</div>
 
         <div className="hs-family-switcher">
           <div className="hs-family-avatar" aria-hidden="true">
