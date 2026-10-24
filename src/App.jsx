@@ -611,13 +611,13 @@ export default function App() {
       <header className="hs-topbar no-print">
       <div className="hs-brand">
   <img
-    src="/brand/Hearthsmith_Full logo.png"
+    src={`${import.meta.env.BASE_URL}brand/Hearthsmith_Full logo.png`}
     alt="HearthSmith"
     className="hs-brand__crest"
   />
 
   <img
-    src="/brand/Hearthsmith_Wordmark.png"
+    src={`${import.meta.env.BASE_URL}brand/Hearthsmith_Wordmark.png`}
     alt="HearthSmith"
     className="hs-brand__wordmark"
   />
