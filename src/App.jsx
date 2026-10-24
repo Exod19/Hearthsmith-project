@@ -19,15 +19,16 @@ import ExportPanel from './components/ExportPanel.jsx';
 import MealEditor from './components/MealEditor.jsx';
 import { MealDetail } from './components/MealCard.jsx';
 import { useToast } from './components/ui.jsx';
+import Icon from './components/icons.jsx';
 
 const TABS = [
-  { key: 'semaine', label: 'Semaine', icon: '🗓' },
-  { key: 'recettes', label: 'Recettes', icon: '📜' },
-  { key: 'epicerie', label: 'Épicerie', icon: '🛒' },
-  { key: 'prep', label: 'Meal prep', icon: '🧑‍🍳' },
-  { key: 'logis', label: 'Logis', icon: '⌂' },
-  { key: 'assistant', label: 'Assistant', icon: '✨' },
-  { key: 'reglages', label: 'Réglages', icon: '⚙' },
+  { key: 'semaine', label: 'Semaine', icon: 'calendar' },
+  { key: 'recettes', label: 'Recettes', icon: 'book' },
+  { key: 'epicerie', label: 'Épicerie', icon: 'basket' },
+  { key: 'prep', label: 'Meal prep', icon: 'pot' },
+  { key: 'logis', label: 'Logis', icon: 'home' },
+  { key: 'assistant', label: 'Assistant', icon: 'sparkle' },
+  { key: 'reglages', label: 'Réglages', icon: 'settings' },
 ];
 
 const DAY_LABELS = Object.fromEntries(DAYS.map((d) => [d.id, d.short]));
@@ -99,83 +100,95 @@ export default function App() {
         Aller au contenu
       </a>
 
-      <header className="topbar no-print">
-        <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="Hearthsmith, accueil">
-          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="140" height="140" />
-          <img src={`${BASE}brand/wordmark.webp`} alt="Hearthsmith" className="brand__wordmark" height="84" />
+      <aside className="sidebar no-print">
+        <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="HearthSmith, accueil">
+          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="96" height="96" />
+          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="600" height="200" />
         </button>
 
-        <div className="topbar__right">
-          <button type="button" className="household" onClick={() => goTo('logis')} title="Membres du logis">
-            <span className="household__avatars" aria-hidden="true">
-              {activeMembers.slice(0, 4).map((m) => (
-                <Avatar key={m.id} member={m} size="tiny" />
-              ))}
+        <nav className="nav" aria-label="Navigation principale">
+          {TABS.map((t) => (
+            <a
+              key={t.key}
+              href={`#/${t.key}`}
+              className={`nav__btn ${tab === t.key ? 'is-active' : ''} ${t.key === 'reglages' ? 'nav__btn--end' : ''}`}
+              aria-current={tab === t.key ? 'page' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                goTo(t.key);
+              }}
+            >
+              <Icon name={t.icon} className="nav__icon" />
+              <span className="nav__label">{t.label}</span>
+              {t.key === 'logis' && conflictCount > 0 && (
+                <span className="nav__badge" title={`${conflictCount} alerte(s) de profil`}>
+                  {conflictCount}
+                </span>
+              )}
+            </a>
+          ))}
+        </nav>
+
+        <button type="button" className="household" onClick={() => goTo('logis')} title="Membres du logis">
+          <span className="household__avatars" aria-hidden="true">
+            {activeMembers.slice(0, 4).map((m) => (
+              <Avatar key={m.id} member={m} size="tiny" />
+            ))}
+          </span>
+          <span className="household__text">
+            <strong>Le logis</strong>
+            <span>
+              {activeMembers.length} membre{activeMembers.length > 1 ? 's' : ''} actif{activeMembers.length > 1 ? 's' : ''}
             </span>
-            <span className="household__text">
-              <strong>Le logis</strong>
-              <span>
-                {activeMembers.length} membre{activeMembers.length > 1 ? 's' : ''} actif{activeMembers.length > 1 ? 's' : ''}
-              </span>
-            </span>
-          </button>
-          <button type="button" className="icon-btn topbar__settings" onClick={() => goTo('reglages')} aria-label="Réglages">
-            ⚙
-          </button>
-        </div>
+          </span>
+        </button>
+      </aside>
+
+      {/* Barre du haut : mobile et tablette seulement. */}
+      <header className="topbar no-print">
+        <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="HearthSmith, accueil">
+          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="48" height="48" />
+          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="600" height="200" />
+        </button>
+        <button type="button" className="icon-btn topbar__settings" onClick={() => goTo('reglages')} aria-label="Réglages">
+          <Icon name="settings" />
+        </button>
       </header>
 
-      <nav className="nav no-print" aria-label="Navigation principale">
-        {TABS.map((t) => (
-          <a
-            key={t.key}
-            href={`#/${t.key}`}
-            className={`nav__btn ${tab === t.key ? 'is-active' : ''} ${t.key === 'reglages' ? 'nav__btn--end' : ''}`}
-            aria-current={tab === t.key ? 'page' : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              goTo(t.key);
-            }}
-          >
-            <span className="nav__icon" aria-hidden="true">
-              {t.icon}
-            </span>
-            <span className="nav__label">{t.label}</span>
-            {t.key === 'logis' && conflictCount > 0 && <span className="nav__badge">{conflictCount}</span>}
-          </a>
-        ))}
-      </nav>
+      <div className="content">
+        <main className="main" id="contenu">
+          {tab === 'semaine' && (
+            <WeeklyMenu
+              menus={menus}
+              menu={menu}
+              meals={meals}
+              mealsById={mealsById}
+              images={images}
+              actions={actions}
+              conflictCount={conflictCount}
+              onOpenMeal={setViewMealId}
+              onCreateMeal={createMeal}
+              onGoTo={goTo}
+            />
+          )}
+          {tab === 'recettes' && <MealLibrary meals={meals} images={images} menu={menu} onEdit={setEditMealId} onCreate={createMeal} onGoTo={goTo} />}
+          {tab === 'epicerie' && (
+            <GroceryList menu={menu} groceryList={groceryList} checks={groceryChecks[menu.id] || {}} prices={state.prices} actions={actions} onGoTo={goTo} />
+          )}
+          {tab === 'prep' && <MealPrep menu={menu} mealsById={mealsById} images={images} actions={actions} onOpenMeal={setViewMealId} onGoTo={goTo} />}
+          {tab === 'logis' && (
+            <HouseholdMembers members={members} menu={menu} mealsById={mealsById} actions={actions} onOpenMeal={setViewMealId} onAskAssistant={askAssistant} />
+          )}
+          {tab === 'assistant' && (
+            <AIAssistant meals={meals} menu={menu} members={members} actions={actions} draft={aiDraft} onDraftUsed={clearDraft} onGoTo={goTo} />
+          )}
+          {tab === 'reglages' && <ExportPanel state={state} actions={actions} />}
+        </main>
 
-      <main className="main" id="contenu">
-        {tab === 'semaine' && (
-          <WeeklyMenu
-            menus={menus}
-            menu={menu}
-            meals={meals}
-            mealsById={mealsById}
-            images={images}
-            actions={actions}
-            conflictCount={conflictCount}
-            onOpenMeal={setViewMealId}
-            onCreateMeal={createMeal}
-            onGoTo={goTo}
-          />
-        )}
-        {tab === 'recettes' && <MealLibrary meals={meals} images={images} menu={menu} onEdit={setEditMealId} onCreate={createMeal} onGoTo={goTo} />}
-        {tab === 'epicerie' && <GroceryList menu={menu} groceryList={groceryList} checks={groceryChecks[menu.id] || {}} prices={state.prices} actions={actions} onGoTo={goTo} />}
-        {tab === 'prep' && <MealPrep menu={menu} mealsById={mealsById} images={images} actions={actions} onOpenMeal={setViewMealId} onGoTo={goTo} />}
-        {tab === 'logis' && (
-          <HouseholdMembers members={members} menu={menu} mealsById={mealsById} actions={actions} onOpenMeal={setViewMealId} onAskAssistant={askAssistant} />
-        )}
-        {tab === 'assistant' && (
-          <AIAssistant meals={meals} menu={menu} members={members} actions={actions} draft={aiDraft} onDraftUsed={clearDraft} onGoTo={goTo} />
-        )}
-        {tab === 'reglages' && <ExportPanel state={state} actions={actions} />}
-      </main>
-
-      <footer className="footer no-print">
-        <p>🔥 Hearthsmith garde vos recettes, menus et photos dans ce navigateur. Pensez à faire une sauvegarde de temps en temps.</p>
-      </footer>
+        <footer className="footer no-print">
+          <p>HearthSmith garde vos recettes, menus et photos dans ce navigateur. Pensez à faire une sauvegarde de temps en temps.</p>
+        </footer>
+      </div>
 
       {viewMeal && (
         <MealDetail

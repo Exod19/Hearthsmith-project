@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DAYS, MEAL_TYPES } from '../data/defaults.js';
 import { Card, PageHeader, useToast } from './ui.jsx';
+import Icon from './icons.jsx';
 
 const SYSTEM_PROMPT = `
 Tu es l'assistant nutritionnel et organisationnel d'une famille québécoise.
@@ -161,7 +162,12 @@ async function requestAI({ provider, endpoint, model, apiKey, messages, jsonMode
   const choice = data.choices?.[0];
   const text =
     provider.mode === 'responses'
-      ? data.output_text || data.output?.flatMap((o) => o.content || []).map((c) => c.text || '').join('') || ''
+      ? data.output_text ||
+        data.output
+          ?.flatMap((o) => o.content || [])
+          .map((c) => c.text || '')
+          .join('') ||
+        ''
       : choice?.message?.content || '';
   const truncated = choice?.finish_reason === 'length' || data.status === 'incomplete';
   return { text, truncated };
@@ -187,47 +193,43 @@ async function callAI({ provider, endpoint, model, apiKey, request, context, his
   if (truncated) throw new Error('La réponse a été coupée parce qu’elle était trop longue. Demandez moins d’éléments à la fois (par exemple 3 recettes).');
 
   // Second essai : on rappelle le format attendu.
-  ({ text, truncated } = await requestAI({ ...opts, messages: [...messages, { role: 'assistant', content: text || '…' }, { role: 'user', content: JSON_REMINDER }] }));
+  ({ text, truncated } = await requestAI({
+    ...opts,
+    messages: [...messages, { role: 'assistant', content: text || '…' }, { role: 'user', content: JSON_REMINDER }],
+  }));
   result = text && parseJson(text);
   if (result) return result;
   if (!text) throw new Error('L’IA n’a rien renvoyé. Essayez un autre modèle dans la configuration.');
 
   // Dernier recours : afficher la réponse telle quelle, sans changement applicable.
-  return { message: `${text.trim().slice(0, 3000)}\n\n(Réponse libre : rien à appliquer automatiquement. Essayez un autre modèle pour obtenir une proposition applicable.)` };
+  return {
+    message: `${text.trim().slice(0, 3000)}\n\n(Réponse libre : rien à appliquer automatiquement. Essayez un autre modèle pour obtenir une proposition applicable.)`,
+  };
 }
 
-export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo }) {
-  const notify = useToast();
+/** Connexion à l'IA (fournisseur, modèle, clé) : affichée dans Réglages. */
+export function AISettings() {
   const [providerId, setProviderId] = useState(() => STORE.get('provider', 'groq'));
   const [apiKey, setApiKey] = useState(() => STORE.get('api_key'));
   const [model, setModel] = useState(() => STORE.get('model', PROVIDERS.groq.model));
   const [customEndpoint, setCustomEndpoint] = useState(() => STORE.get('custom_endpoint'));
-  const [showSettings, setShowSettings] = useState(() => !STORE.get('api_key'));
-  const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [pending, setPending] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
   const [models, setModels] = useState([]);
   const [modelsError, setModelsError] = useState('');
-  const promptRef = useRef(null);
-  const logRef = useRef(null);
 
   const provider = PROVIDERS[providerId] || PROVIDERS.groq;
   const endpoint = providerId === 'custom' ? customEndpoint.trim() : provider.endpoint;
-  const context = useMemo(() => buildContext({ meals, menu, members }), [meals, menu, members]);
+  const configured = Boolean(apiKey && model && endpoint);
 
-  // Demande préparée depuis un autre onglet (ex. Membres du logis).
-  useEffect(() => {
-    if (!draft) return;
-    setPrompt(draft);
-    onDraftUsed();
-    promptRef.current?.focus();
-  }, [draft, onDraftUsed]);
+  const save = (key, setter) => (value) => {
+    setter(value);
+    STORE.set(key, value);
+  };
 
-  useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, busy]);
+  function changeProvider(id) {
+    setProviderId(id);
+    STORE.set('provider', id);
+    save('model', setModel)(PROVIDERS[id].model);
+  }
 
   // Liste des modèles disponibles dès qu'une clé est saisie ; corrige un modèle retiré.
   useEffect(() => {
@@ -259,24 +261,110 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, endpoint]);
 
+  return (
+    <Card title="Connexion à l’IA" icon="key" className="ai-settings">
+      <div className="field-row">
+        <label className="field">
+          <span>Fournisseur</span>
+          <select className="input" value={providerId} onChange={(e) => changeProvider(e.target.value)}>
+            {Object.entries(PROVIDERS).map(([id, p]) => (
+              <option key={id} value={id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Modèle</span>
+          {models.length ? (
+            <select className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)}>
+              {!models.includes(model) && <option value={model}>{model}</option>}
+              {models.map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)} placeholder={provider.model || 'nom du modèle'} />
+          )}
+        </label>
+        <label className="field">
+          <span>Clé API</span>
+          <input
+            className="input"
+            type="password"
+            autoComplete="off"
+            value={apiKey}
+            onChange={(e) => save('api_key', setApiKey)(e.target.value)}
+            placeholder={provider.keyHint}
+          />
+        </label>
+      </div>
+      {providerId === 'custom' && (
+        <label className="field">
+          <span>Adresse de l’API (compatible OpenAI)</span>
+          <input
+            className="input"
+            value={customEndpoint}
+            onChange={(e) => save('custom_endpoint', setCustomEndpoint)(e.target.value)}
+            placeholder="https://…/v1/chat/completions"
+          />
+        </label>
+      )}
+      {modelsError && <p className="form-error">{modelsError}</p>}
+      <p className="hint">La clé reste dans ce navigateur et n’est envoyée qu’au fournisseur choisi. N’utilisez pas cette page sur un ordinateur partagé.</p>
+      {configured && (
+        <p className="hint">
+          Connecté : {provider.label} · {model}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo }) {
+  const notify = useToast();
+  // La connexion se règle dans Réglages ; ici on la lit seulement.
+  const [providerId] = useState(() => STORE.get('provider', 'groq'));
+  const [apiKey] = useState(() => STORE.get('api_key'));
+  const [model, setModel] = useState(() => STORE.get('model', PROVIDERS.groq.model));
+  const [customEndpoint] = useState(() => STORE.get('custom_endpoint'));
+  const [prompt, setPrompt] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [pending, setPending] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const promptRef = useRef(null);
+  const logRef = useRef(null);
+
+  const provider = PROVIDERS[providerId] || PROVIDERS.groq;
+  const endpoint = providerId === 'custom' ? customEndpoint.trim() : provider.endpoint;
+  const context = useMemo(() => buildContext({ meals, menu, members }), [meals, menu, members]);
+
+  // Demande préparée depuis un autre onglet (ex. Membres du logis).
+  useEffect(() => {
+    if (!draft) return;
+    setPrompt(draft);
+    onDraftUsed();
+    promptRef.current?.focus();
+  }, [draft, onDraftUsed]);
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, busy]);
+
   const save = (key, setter) => (value) => {
     setter(value);
     STORE.set(key, value);
   };
-
-  function changeProvider(id) {
-    setProviderId(id);
-    STORE.set('provider', id);
-    save('model', setModel)(PROVIDERS[id].model);
-  }
 
   async function handleSubmit(event) {
     event.preventDefault();
     const request = prompt.trim();
     if (!request) return;
     if (!apiKey.trim() || !model.trim() || !endpoint) {
-      setShowSettings(true);
-      setError('Configurez le fournisseur, le modèle et la clé API avant d’envoyer une demande.');
+      setError('Configurez la connexion à l’IA dans Réglages avant d’envoyer une demande.');
       return;
     }
     setBusy(true);
@@ -290,7 +378,7 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
       try {
         result = await callAI(args).catch((err) =>
           // Certains modèles refusent le mode JSON imposé : on réessaie sans.
-          /response_format|json/i.test(err.message) && err.code !== 'model_not_found' ? callAI({ ...args, jsonMode: false }) : Promise.reject(err)
+          /response_format|json/i.test(err.message) && err.code !== 'model_not_found' ? callAI({ ...args, jsonMode: false }) : Promise.reject(err),
         );
       } catch (err) {
         if (err.code !== 'model_not_found') throw err;
@@ -298,7 +386,6 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
         const ids = await listModels(endpoint, apiKey);
         const next = pickModel(ids.filter((id) => id !== model));
         if (!next) throw err;
-        setModels(ids);
         save('model', setModel)(next);
         notify(`Le modèle « ${model} » n’existe plus : bascule sur « ${next} ».`);
         result = await callAI({ ...args, model: next });
@@ -332,65 +419,24 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
   return (
     <div className="page">
       <PageHeader
-        icon="✨"
+        icon="sparkle"
         title="Assistant"
         subtitle="Demandez des recettes, un menu complet ou un plan de meal prep. L’assistant connaît vos recettes, votre semaine et les profils du logis."
         actions={
-          <button type="button" className="btn btn--parchment" onClick={() => setShowSettings((v) => !v)} aria-expanded={showSettings}>
-            ⚙ {configured ? `${provider.label} · ${model}` : 'Configurer'}
+          <button type="button" className="btn btn--secondary" onClick={() => onGoTo('reglages')}>
+            <Icon name="settings" size={18} /> {configured ? `${provider.label} · ${model}` : 'Configurer'}
           </button>
         }
       />
 
-      {showSettings && (
-        <Card title="Connexion à l’IA" icon="🔑" className="ai-settings">
-          <div className="field-row">
-            <label className="field">
-              <span>Fournisseur</span>
-              <select className="input" value={providerId} onChange={(e) => changeProvider(e.target.value)}>
-                {Object.entries(PROVIDERS).map(([id, p]) => (
-                  <option key={id} value={id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Modèle</span>
-              {models.length ? (
-                <select className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)}>
-                  {!models.includes(model) && <option value={model}>{model}</option>}
-                  {models.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)} placeholder={provider.model || 'nom du modèle'} />
-              )}
-            </label>
-            <label className="field">
-              <span>Clé API</span>
-              <input className="input" type="password" autoComplete="off" value={apiKey} onChange={(e) => save('api_key', setApiKey)(e.target.value)} placeholder={provider.keyHint} />
-            </label>
-          </div>
-          {providerId === 'custom' && (
-            <label className="field">
-              <span>Adresse de l’API (compatible OpenAI)</span>
-              <input className="input" value={customEndpoint} onChange={(e) => save('custom_endpoint', setCustomEndpoint)(e.target.value)} placeholder="https://…/v1/chat/completions" />
-            </label>
-          )}
-          {modelsError && <p className="form-error">{modelsError}</p>}
-          <p className="hint">
-            🔒 La clé reste dans ce navigateur et n’est envoyée qu’au fournisseur choisi. N’utilisez pas cette page sur un ordinateur partagé.
-          </p>
-          {configured && (
-            <button type="button" className="btn btn--primary btn--sm" onClick={() => setShowSettings(false)}>
-              ✓ Terminé
-            </button>
-          )}
-        </Card>
+      {!configured && (
+        <div className="callout">
+          <Icon name="key" size={28} />
+          <p>Pour utiliser l’assistant, ajoutez une clé API (Groq, OpenAI ou compatible) dans Réglages.</p>
+          <button type="button" className="btn btn--primary" onClick={() => onGoTo('reglages')}>
+            Ouvrir Réglages
+          </button>
+        </div>
       )}
 
       <div className="ai-layout">
@@ -398,7 +444,7 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
           <div className="ai-log" ref={logRef} aria-live="polite">
             {messages.length === 0 && (
               <div className="ai-welcome">
-                <span aria-hidden="true">🔮</span>
+                <Icon name="sparkle" size={40} />
                 <p>Par où commencer ? Essayez une de ces demandes :</p>
                 <div className="ai-examples">
                   {EXAMPLES.map((ex) => (
@@ -446,14 +492,14 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
               aria-label="Votre demande"
             />
             <button type="submit" className="btn btn--primary" disabled={busy || !prompt.trim()}>
-              {busy ? 'Réflexion…' : 'Envoyer ➤'}
+              {busy ? 'Réflexion…' : 'Envoyer'}
             </button>
           </form>
         </Card>
 
         <aside>
           {pending ? (
-            <Card title="Proposition à appliquer" icon="📦" className="ai-pending">
+            <Card title="Proposition à appliquer" icon="box" className="ai-pending">
               <ul className="ai-summary">
                 {pending.createMeals?.length > 0 && (
                   <li>
@@ -466,8 +512,8 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
                     <strong>{pending.updateMeals.length}</strong> recette(s) mise(s) à jour
                   </li>
                 )}
-                {pending.weeklyMenu && <li>🗓 Menu de la semaine pour « {menu.name} »</li>}
-                {pending.mealPrepPlan && <li>🧑‍🍳 Plan de meal prep</li>}
+                {pending.weeklyMenu && <li>Menu de la semaine pour « {menu.name} »</li>}
+                {pending.mealPrepPlan && <li>Plan de meal prep</li>}
               </ul>
               <details>
                 <summary>Voir le détail technique</summary>
@@ -475,7 +521,7 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
               </details>
               <div className="toolbar">
                 <button type="button" className="btn btn--primary" onClick={applyPending}>
-                  ✓ Appliquer
+                  <Icon name="check" size={18} /> Appliquer
                 </button>
                 <button type="button" className="btn btn--ghost" onClick={() => setPending(null)}>
                   Ignorer
@@ -483,14 +529,12 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
               </div>
             </Card>
           ) : (
-            <Card title="Ce que l’assistant voit" icon="👁">
+            <Card title="Ce que l’assistant voit" icon="eye">
               <ul className="ai-summary">
                 <li>
                   <strong>{meals.length}</strong> recettes
                 </li>
-                <li>
-                  🗓 Semaine « {menu.name} »
-                </li>
+                <li>Semaine « {menu.name} »</li>
                 <li>
                   <strong>{members.filter((m) => m.activeProfile).length}</strong> profils actifs
                   <button type="button" className="link" onClick={() => onGoTo('logis')}>

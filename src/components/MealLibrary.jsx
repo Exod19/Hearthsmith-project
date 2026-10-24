@@ -8,6 +8,7 @@ import { mealIdsOfDay } from '../utils/grocery.js';
 import { normalize } from '../utils/ingredients.js';
 import MealCard from './MealCard.jsx';
 import { Chip, EmptyState, PageHeader } from './ui.jsx';
+import Icon from './icons.jsx';
 
 const SORTS = {
   name: { label: 'Nom', fn: (a, b) => (a.name || '').localeCompare(b.name || '', 'fr') },
@@ -34,7 +35,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
   return (
     <div className="page">
       <PageHeader
-        icon="📜"
+        art="livre-de-recettes"
         title="Recettes"
         subtitle={`${meals.length} recette${meals.length > 1 ? 's' : ''} dans votre grimoire. Cherchez par nom ou par ingrédient.`}
         actions={
@@ -46,7 +47,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
 
       {meals.length === 0 ? (
         <EmptyState
-          icon="📜"
+          art="livre-de-recettes"
           title="Aucune recette pour l’instant"
           action={
             <div className="toolbar">
@@ -54,7 +55,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
                 Créer ma première recette
               </button>
               <button type="button" className="btn btn--parchment" onClick={() => onGoTo('assistant')}>
-                ✨ Demander à l’assistant
+                <Icon name="sparkle" size={18} /> Demander à l’assistant
               </button>
             </div>
           }
@@ -67,7 +68,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
             <input
               className="input filters__search"
               type="search"
-              placeholder="🔍 Rechercher : poulet, riz, soupe…"
+              placeholder="Rechercher : poulet, riz, soupe…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Rechercher une recette"
@@ -78,7 +79,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
               </Chip>
               {MEAL_TYPES.map((t) => (
                 <Chip key={t.id} active={type === t.id} onClick={() => setType(type === t.id ? '' : t.id)}>
-                  {t.icon} {t.label}
+                  {t.label}
                 </Chip>
               ))}
             </div>
@@ -104,7 +105,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
               ))}
             </div>
           ) : (
-            <EmptyState icon="🔍" title="Aucun résultat">
+            <EmptyState icon="search" title="Aucun résultat">
               Essayez un autre mot ou retirez le filtre.
             </EmptyState>
           )}

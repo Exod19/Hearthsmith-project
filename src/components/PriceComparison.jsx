@@ -182,7 +182,7 @@ export default function PriceComparison({ groceryList, checks, prices, actions }
     });
 
   if (!groceryList.items.length) {
-    return <EmptyState icon="🧺" title="Aucun article à comparer">Ajoutez des recettes au menu de la semaine.</EmptyState>;
+    return <EmptyState icon="basket" title="Aucun article à comparer">Ajoutez des recettes au menu de la semaine.</EmptyState>;
   }
 
   return (
@@ -264,7 +264,7 @@ export default function PriceComparison({ groceryList, checks, prices, actions }
           {tips.length > 0 && (
             <Card
               title="Astuces de la semaine"
-              icon="💡"
+              icon="bulb"
               className="price-tips"
               actions={
                 tips.length > 4 && (
@@ -444,7 +444,7 @@ function ProductChooser({ row, store, current, results, isManual, onPick, onClos
         {list.map((p) => (
           <li key={p.id}>
             <button type="button" className={current?.id === p.id ? 'is-current' : ''} onClick={() => onPick(p)}>
-              {p.image ? <img src={p.image} alt="" loading="lazy" onError={hideImage} /> : <span className="product-list__ph" aria-hidden="true">🛒</span>}
+              {p.image ? <img src={p.image} alt="" loading="lazy" onError={hideImage} /> : <span className="product-list__ph" aria-hidden="true" />}
               <span>
                 <strong>{p.name}</strong>
                 <small>
@@ -497,7 +497,7 @@ function OrderPanel({ summary, notify }) {
   }
 
   return (
-    <Card title="Commander" icon="🧾" className="order-panel">
+    <Card title="Commander" icon="receipt" className="order-panel">
       <p>
         Le meilleur plan, regroupé par magasin. Ouvrez chaque produit sur le site de l’épicerie (connecté à votre compte), ajoutez-le au panier, puis passez au suivant. Le paiement et le
         créneau de livraison ou de cueillette se font sur le site de l’épicerie.
@@ -526,7 +526,7 @@ function OrderPanel({ summary, notify }) {
               </ol>
               <div className="toolbar">
                 <button type="button" className="btn btn--primary btn--sm" onClick={() => openNext(store, items)} disabled={i >= items.length}>
-                  {i >= items.length ? '✓ Tout est ouvert' : i === 0 ? `Commencer chez ${storeLabel(store)}` : `Produit suivant (${i + 1}/${items.length})`}
+                  {i >= items.length ? 'Tout est ouvert' : i === 0 ? `Commencer chez ${storeLabel(store)}` : `Produit suivant (${i + 1}/${items.length})`}
                 </button>
                 <button
                   type="button"

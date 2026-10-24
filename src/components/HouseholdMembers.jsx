@@ -10,6 +10,7 @@ import { DAYS } from '../data/defaults.js';
 import { resizeImageFile } from '../utils/files.js';
 import { findConflicts } from '../utils/nutrition.js';
 import { PageHeader, useToast } from './ui.jsx';
+import Icon from './icons.jsx';
 import './HouseholdMembers.css';
 
 const DAY_LABELS = Object.fromEntries(DAYS.map((d) => [d.id, d.short]));
@@ -55,7 +56,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
   if (!member) {
     return (
       <div className="page">
-        <PageHeader icon="⌂" title="Membres du logis" subtitle="Ajoutez les personnes pour qui vous cuisinez." />
+        <PageHeader art="cottage-logis" title="Membres du logis" subtitle="Ajoutez les personnes pour qui vous cuisinez." />
         <button type="button" className="btn btn--primary" onClick={() => setSelectedId(actions.addMember())}>
           ＋ Ajouter un membre
         </button>
@@ -96,7 +97,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
   return (
     <section className="hs-household-page">
       <PageHeader
-        icon="⌂"
+        art="cottage-logis"
         title="Membres du logis"
         subtitle="Des profils complets permettent de repérer les repas à éviter et de mieux guider l’assistant."
         actions={
@@ -155,7 +156,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
             <div className="hs-profile-portrait-wrap">
               <Avatar member={member} size="large" />
               <button type="button" className="hs-camera-btn" onClick={() => fileInputRef.current?.click()} aria-label="Changer la photo">
-                📷
+                <Icon name="camera" size={20} />
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
             </div>
@@ -198,7 +199,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
 
             <div className="hs-profile-actions">
               <button type="button" className={`btn ${editing ? 'btn--primary' : 'btn--parchment'}`} onClick={() => setEditing((v) => !v)}>
-                {editing ? '✓ Terminer' : '✎ Modifier la fiche'}
+                {editing ? 'Terminer' : 'Modifier la fiche'}
               </button>
               {editing && (
                 <>
@@ -208,7 +209,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
                     </button>
                   )}
                   <button type="button" className="btn btn--danger" onClick={deleteMember}>
-                    🗑 Supprimer
+                    <Icon name="trash" size={18} /> Supprimer
                   </button>
                 </>
               )}
@@ -223,7 +224,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
           </section>
 
           <section className="hs-profile-grid">
-            <Panel title="Données physiques & nutritionnelles" icon="⚕">
+            <Panel title="Données physiques & nutritionnelles" icon="pulse">
               <div className="hs-field-grid">
                 <EditableField label="Grandeur" value={member.height} editing={editing} onChange={(v) => update({ height: v })} />
                 <EditableField label="Poids actuel" value={member.currentWeight} editing={editing} onChange={(v) => update({ currentWeight: v })} />
@@ -244,7 +245,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
               </div>
             </Panel>
 
-            <Panel title="Santé, restrictions & précautions" icon="🛡">
+            <Panel title="Santé, restrictions & précautions" icon="shield">
               <EditableList title="Restrictions alimentaires" values={member.restrictions} editing={editing} onChange={(v) => update({ restrictions: v })} />
               <EditableList title="Conditions à considérer" values={member.conditions} editing={editing} onChange={(v) => update({ conditions: v })} danger />
               <div className="hs-severity">
@@ -261,14 +262,14 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
               </div>
             </Panel>
 
-            <Panel title="Préférences alimentaires" icon="❤">
+            <Panel title="Préférences alimentaires" icon="heart">
               <div className="hs-two-columns">
                 <EditableList title="Aime" values={member.likes} editing={editing} onChange={(v) => update({ likes: v })} positive />
                 <EditableList title="N’aime pas / éviter" values={member.dislikes} editing={editing} onChange={(v) => update({ dislikes: v })} danger />
               </div>
             </Panel>
 
-            <Panel title="Habitudes de vie" icon="☼">
+            <Panel title="Habitudes de vie" icon="sun">
               <div className="hs-field-grid">
                 <EditableField label="Horaire" value={member.habits.schedule} editing={editing} onChange={(v) => updateHabits({ schedule: v })} />
                 <EditableField label="Repas à la maison" value={member.habits.homeMeals} editing={editing} onChange={(v) => updateHabits({ homeMeals: v })} />
@@ -285,7 +286,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
         <aside className="hs-ai-panel hs-frame-card" aria-label="Compatibilité avec le menu">
           <div className="hs-ai-header">
             <span className="hs-ai-orb" aria-hidden="true">
-              ✦
+              <Icon name="shield" size={22} />
             </span>
             <div>
               <h2>Compatibilité du menu</h2>
@@ -298,7 +299,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
             {!member.activeProfile ? (
               <p className="hs-compat__ok">Profil inactif : aucune vérification.</p>
             ) : conflicts.length === 0 ? (
-              <p className="hs-compat__ok">✓ Aucun conflit détecté cette semaine.</p>
+              <p className="hs-compat__ok">Aucun conflit détecté cette semaine.</p>
             ) : (
               <ul className="hs-compat__list">
                 {conflicts.map((c) => (
@@ -320,10 +321,10 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
           </div>
 
           <div className="hs-ai-actions">
-            <button type="button" onClick={() => ask('propose 5 recettes compatibles avec son profil.')}>🍲 Recettes compatibles</button>
-            <button type="button" onClick={() => ask('vérifie le menu de la semaine et propose des remplacements si nécessaire.')}>✨ Vérifier le menu</button>
-            <button type="button" onClick={() => ask('suggère des collations compatibles avec son profil.')}>🍎 Idées de collations</button>
-            <button type="button" onClick={() => ask('analyse son profil et dis-moi ce qui manque pour de meilleures recommandations.')}>🔍 Compléter le profil</button>
+            <button type="button" onClick={() => ask('propose 5 recettes compatibles avec son profil.')}>Recettes compatibles</button>
+            <button type="button" onClick={() => ask('vérifie le menu de la semaine et propose des remplacements si nécessaire.')}>Vérifier le menu</button>
+            <button type="button" onClick={() => ask('suggère des collations compatibles avec son profil.')}>Idées de collations</button>
+            <button type="button" onClick={() => ask('analyse son profil et dis-moi ce qui manque pour de meilleures recommandations.')}>Compléter le profil</button>
           </div>
         </aside>
       </div>
@@ -335,7 +336,7 @@ function Panel({ title, icon, children }) {
   return (
     <section className="hs-panel hs-frame-card">
       <h3>
-        <span aria-hidden="true">{icon}</span>
+        <Icon name={icon} size={20} />
         {title}
       </h3>
       {children}
@@ -355,7 +356,7 @@ function EditableField({ label, value, editing, onChange }) {
 function Macro({ label, value, editing, onChange }) {
   return (
     <label className="hs-macro">
-      <span aria-hidden="true">✦</span>
+
       {editing ? <input value={value || ''} onChange={(e) => onChange(e.target.value)} aria-label={label} /> : <strong>{value || '—'}</strong>}
       <small>{label}</small>
     </label>

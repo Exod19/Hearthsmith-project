@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react';
 import { MACROS, MEAL_TYPES } from '../data/defaults.js';
 import { MealImage, Modal } from './ui.jsx';
+import Icon from './icons.jsx';
 
 const typeLabels = (meal) =>
   (meal.mealTypes || []).map((id) => MEAL_TYPES.find((t) => t.id === id)?.label || id).join(' · ');
@@ -31,7 +32,11 @@ export default function MealCard({ meal, image, onOpen, active }) {
         <strong className="meal-card__name">{meal.name || 'Repas sans nom'}</strong>
         <span className="meal-card__meta">
           <MacroLine meal={meal} />
-          {meal.prepTime ? <span>⏱ {meal.prepTime} min</span> : null}
+          {meal.prepTime ? (
+            <span>
+              <Icon name="clock" size={14} /> {meal.prepTime} min
+            </span>
+          ) : null}
         </span>
       </span>
     </button>
@@ -50,7 +55,7 @@ export function MealDetail({ meal, image, members, onClose, onEdit }) {
       footer={
         onEdit && (
           <button type="button" className="btn btn--primary" onClick={() => onEdit(meal.id)}>
-            ✎ Modifier la fiche
+            <Icon name="edit" size={18} /> Modifier la fiche
           </button>
         )
       }
@@ -60,9 +65,19 @@ export function MealDetail({ meal, image, members, onClose, onEdit }) {
         <div className="detail__summary">
           <p className="detail__type">{typeLabels(meal) || 'Repas'}</p>
           <div className="detail__facts">
-            {meal.prepTime ? <span>⏱ {meal.prepTime} min</span> : null}
-            {meal.servings ? <span>🍴 {meal.servings} portions</span> : null}
-            <span>👥 {people.length ? people.join(', ') : 'Toute la famille'}</span>
+            {meal.prepTime ? (
+              <span>
+                <Icon name="clock" size={16} /> {meal.prepTime} min
+              </span>
+            ) : null}
+            {meal.servings ? (
+              <span>
+                <Icon name="utensils" size={16} /> {meal.servings} portions
+              </span>
+            ) : null}
+            <span>
+              <Icon name="users" size={16} /> {people.length ? people.join(', ') : 'Toute la famille'}
+            </span>
           </div>
           <dl className="macro-grid">
             {MACROS.map((m) => (
@@ -105,7 +120,7 @@ export function MealDetail({ meal, image, members, onClose, onEdit }) {
           )}
         </section>
       </div>
-      {meal.notes && <p className="detail__notes">📝 {meal.notes}</p>}
+      {meal.notes && <p className="detail__notes">{meal.notes}</p>}
     </Modal>
   );
 }

@@ -6,6 +6,8 @@ import { useRef } from 'react';
 import { exportBackup } from '../utils/files.js';
 import { readBackup, storageUsage } from '../utils/storage.js';
 import { Card, PageHeader, Progress, useToast } from './ui.jsx';
+import Icon from './icons.jsx';
+import { AISettings } from './AIAssistant.jsx';
 
 // La plupart des navigateurs accordent environ 5 Mo par site.
 const QUOTA = 5 * 1024 * 1024;
@@ -38,10 +40,11 @@ export default function ExportPanel({ state, actions }) {
 
   return (
     <div className="page">
-      <PageHeader icon="⚙" title="Réglages" subtitle="Vos données restent dans ce navigateur. Faites une sauvegarde pour les transférer sur un autre appareil." />
+      <PageHeader icon="settings" title="Réglages" subtitle="Vos données restent dans ce navigateur. Faites une sauvegarde pour les transférer sur un autre appareil." />
 
       <div className="settings-grid">
-        <Card title="Sauvegarde" icon="💾">
+        <AISettings />
+        <Card title="Sauvegarde" icon="download">
           <p>Téléchargez un fichier avec toutes vos recettes, semaines, profils et photos, ou restaurez-en un.</p>
           <div className="toolbar">
             <button
@@ -52,16 +55,16 @@ export default function ExportPanel({ state, actions }) {
                 notify('Sauvegarde téléchargée');
               }}
             >
-              ⇩ Télécharger une sauvegarde
+              <Icon name="download" size={18} /> Télécharger une sauvegarde
             </button>
             <button type="button" className="btn btn--parchment" onClick={() => fileRef.current?.click()}>
-              ⇧ Restaurer un fichier
+              <Icon name="upload" size={18} /> Restaurer un fichier
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={handleImport} />
           </div>
         </Card>
 
-        <Card title="Espace utilisé" icon="📦">
+        <Card title="Espace utilisé" icon="box">
           <p>
             {(used / 1024 / 1024).toFixed(2).replace('.', ',')} Mo sur environ 5 Mo · {Object.keys(state.images).length} photo(s)
           </p>
@@ -70,7 +73,7 @@ export default function ExportPanel({ state, actions }) {
         </Card>
 
         {sampleCount > 0 && (
-          <Card title="Recettes d’exemple" icon="📜">
+          <Card title="Recettes d’exemple" icon="book">
             <p>{sampleCount} recettes d’exemple ont été ajoutées pour vous aider à démarrer.</p>
             <button
               type="button"
@@ -85,7 +88,7 @@ export default function ExportPanel({ state, actions }) {
           </Card>
         )}
 
-        <Card title="Remise à zéro" icon="⚠" className="card--danger">
+        <Card title="Remise à zéro" icon="warning" className="card--danger">
           <p>Efface tout le contenu de l’application dans ce navigateur. Les profils du logis par défaut sont recréés.</p>
           <button type="button" className="btn btn--danger" onClick={handleReset}>
             Tout effacer

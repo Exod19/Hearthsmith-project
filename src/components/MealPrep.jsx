@@ -10,6 +10,7 @@ import { DAYS } from '../data/defaults.js';
 import { mealIdsOfDay } from '../utils/grocery.js';
 import { toNumber } from '../utils/nutrition.js';
 import { Card, EmptyState, MealImage, PageHeader, Progress } from './ui.jsx';
+import Icon from './icons.jsx';
 
 const formatDuration = (min) => (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
 
@@ -47,7 +48,7 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
         <strong>{e.meal.name || 'Repas sans nom'}</strong>
         <span>
           {e.count} fois · {e.days.join(', ')}
-          {e.meal.prepTime ? ` · ⏱ ${e.meal.prepTime} min` : ''}
+          {e.meal.prepTime ? ` · ${e.meal.prepTime} min` : ''}
         </span>
       </button>
       {e.count >= 2 && <span className="badge">×{e.count}</span>}
@@ -57,19 +58,19 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
   return (
     <div className="page printable">
       <PageHeader
-        icon="🧑‍🍳"
+        icon="pot"
         title="Meal prep"
         subtitle={`Ce qu’il faut cuisiner pour « ${menu.name} », en commençant par ce qui revient le plus souvent.`}
         actions={
           <button type="button" className="btn btn--parchment no-print" onClick={() => window.print()} disabled={!allEntries.length}>
-            🖨 Imprimer
+            <Icon name="printer" size={18} /> Imprimer
           </button>
         }
       />
 
       {!allEntries.length ? (
         <EmptyState
-          icon="🔪"
+          icon="pot"
           title="Aucun repas à préparer"
           action={
             <button type="button" className="btn btn--primary" onClick={() => onGoTo('semaine')}>
@@ -93,20 +94,20 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
             </div>
 
             {plan.batch.length > 0 && (
-              <Card title="À cuisiner en lot" icon="🍲">
+              <Card title="À cuisiner en lot" icon="pot">
                 <p className="hint">Ces recettes reviennent plusieurs fois : préparez-les d’avance, par exemple le dimanche.</p>
                 <ul className="prep-list">{plan.batch.map(renderEntry)}</ul>
               </Card>
             )}
             {plan.single.length > 0 && (
-              <Card title="Au jour le jour" icon="🔥">
+              <Card title="Au jour le jour" icon="flame">
                 <ul className="prep-list">{plan.single.map(renderEntry)}</ul>
               </Card>
             )}
           </div>
 
           <aside className="prep-side">
-            <Card title="Notes de préparation" icon="📝">
+            <Card title="Notes de préparation" icon="note">
               <div className="prep-notes">
                 {DAYS.map((d) => (
                   <label key={d.id} className="field">
@@ -124,7 +125,7 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
             {menu.mealPrepPlan && (
               <Card
                 title="Plan proposé par l’assistant"
-                icon="✨"
+                icon="sparkle"
                 actions={
                   <button type="button" className="btn btn--ghost btn--sm no-print" onClick={() => actions.updateMenu(menu.id, { mealPrepPlan: '' })}>
                     Retirer

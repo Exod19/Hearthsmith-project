@@ -7,15 +7,16 @@ import { exportGroceryCSV } from '../utils/files.js';
 import { formatQuantity, formatUnit } from '../utils/ingredients.js';
 import { Card, EmptyState, PageHeader, Progress, useToast } from './ui.jsx';
 import PriceComparison from './PriceComparison.jsx';
+import Icon from './icons.jsx';
 
 const CATEGORY_ICONS = {
-  'Fruits et légumes': '🥕',
-  'Viandes et poissons': '🍗',
-  'Produits laitiers et oeufs': '🥚',
-  'Boulangerie et céréales': '🌾',
-  'Garde-manger': '🫙',
-  Surgelés: '❄️',
-  Autres: '🧺',
+  'Fruits et légumes': 'leaf',
+  'Viandes et poissons': 'meat',
+  'Produits laitiers et oeufs': 'egg',
+  'Boulangerie et céréales': 'wheat',
+  'Garde-manger': 'jar',
+  Surgelés: 'snow',
+  Autres: 'basket',
 };
 
 export default function GroceryList({ menu, groceryList, checks, prices, actions, onGoTo }) {
@@ -38,13 +39,13 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
   return (
     <div className="page printable">
       <PageHeader
-        icon="🛒"
+        icon="basket"
         title="Épicerie"
         subtitle={`Générée automatiquement à partir de « ${menu.name} ». Les quantités des recettes sont additionnées.`}
         actions={
           <div className="toolbar no-print">
             <button type="button" className="btn btn--parchment" onClick={() => window.print()} disabled={!total}>
-              🖨 Imprimer
+              <Icon name="printer" size={18} /> Imprimer
             </button>
             <button
               type="button"
@@ -55,7 +56,7 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
                 notify('Liste exportée en CSV');
               }}
             >
-              ⇩ Exporter CSV
+              <Icon name="download" size={18} /> Exporter CSV
             </button>
           </div>
         }
@@ -64,10 +65,10 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
       {total > 0 && (
         <div className="segmented no-print" role="tablist" aria-label="Affichage de l’épicerie">
           <button type="button" role="tab" aria-selected={view === 'liste'} className={view === 'liste' ? 'is-active' : ''} onClick={() => setView('liste')}>
-            ☑ Liste
+            <Icon name="list" size={18} /> Liste
           </button>
           <button type="button" role="tab" aria-selected={view === 'prix'} className={view === 'prix' ? 'is-active' : ''} onClick={() => setView('prix')}>
-            💲 Prix et commande
+            <Icon name="tag" size={18} /> Prix et commande
           </button>
         </div>
       )}
@@ -76,7 +77,7 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
         <PriceComparison groceryList={groceryList} checks={checks} prices={prices} actions={actions} />
       ) : total === 0 && !(menu.extraGroceries || []).length ? (
         <EmptyState
-          icon="🧺"
+          art="livre-de-recettes"
           title="Rien à acheter pour l’instant"
           action={
             <button type="button" className="btn btn--primary" onClick={() => onGoTo('semaine')}>
@@ -149,7 +150,7 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
           </div>
 
           {groceryList.staples.length > 0 && (
-            <p className="hint no-print">🏠 Déjà à la maison, non ajoutés : {groceryList.staples.join(', ')}.</p>
+            <p className="hint no-print">Déjà à la maison, non ajoutés : {groceryList.staples.join(', ')}.</p>
           )}
 
           {(menu.extraGroceries || []).length > 0 && (

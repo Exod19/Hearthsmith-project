@@ -13,7 +13,7 @@ Version en ligne : https://exod19.github.io/Hearthsmith-project/
 - **Meal prep** : recettes à cuisiner en lot ou au jour le jour, cases à cocher, notes par jour.
 - **Logis** : profils des membres (restrictions, aversions, objectifs) et alertes quand un repas du menu entre en conflit avec un profil.
 - **Assistant** : crée des recettes, remplit le menu ou propose un plan de meal prep (Groq, OpenAI ou API compatible ; la clé reste dans le navigateur).
-- **Réglages** : sauvegarde et restauration en JSON, espace utilisé, remise à zéro.
+- **Réglages** : connexion à l'IA, sauvegarde et restauration en JSON, espace utilisé, remise à zéro.
 
 Les données sont enregistrées dans le `localStorage` du navigateur.
 
@@ -35,10 +35,11 @@ src/
   data/defaults.js      constantes, profils et recettes d'exemple
   utils/                ingrédients, épicerie, prix (épiceries.ca), nutrition/alertes, stockage, fichiers
   components/           un composant par onglet + ui.jsx (briques communes)
-  styles.css            système visuel (bois, parchemin, cuivre)
-public/brand/           logo officiel (fichiers d'origine) + versions allégées crest.webp / wordmark.webp
-public/hearthsmith/     textures d'origine ; public/textures/ = versions allégées utilisées par l'app
-docs/                   guide de marque (référence visuelle)
+  styles.css            système visuel « Nordic Cottage » (guide de marque V2)
+  components/icons.jsx  pictogrammes SVG au trait
+public/brand/           logo d'origine + versions allégées (crest.webp, mots-symboles ivoire / noyer)
+public/hearthsmith/     textures d'origine et illustrations Nordic Cottage ; public/textures/ = textures allégées
+docs/brand/             guide de marque V2, archives et index des fichiers (docs/brand/README.md)
 ```
 
 ## Déploiement

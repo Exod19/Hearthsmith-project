@@ -10,7 +10,8 @@ import { DAYS, SLOTS } from '../data/defaults.js';
 import { mealIdsOfDay } from '../utils/grocery.js';
 import { dayTotals } from '../utils/nutrition.js';
 import { MacroLine, MealPicker } from './MealCard.jsx';
-import { MealImage, PageHeader, useToast } from './ui.jsx';
+import { artUrl, MealImage, PageHeader, useToast } from './ui.jsx';
+import Icon from './icons.jsx';
 
 // Lundi = 0 … dimanche = 6
 const todayIndex = (new Date().getDay() + 6) % 7;
@@ -27,10 +28,10 @@ function SlotMeal({ meal, image, onOpen, onChange, onRemove }) {
       </button>
       <span className="slot-meal__tools no-print">
         <button type="button" className="icon-btn icon-btn--sm" onClick={onChange} aria-label={`Changer ${meal.name}`} title="Changer">
-          ⇄
+          <Icon name="swap" size={14} />
         </button>
         <button type="button" className="icon-btn icon-btn--sm" onClick={onRemove} aria-label={`Retirer ${meal.name}`} title="Retirer">
-          ✕
+          <Icon name="close" size={14} />
         </button>
       </span>
     </div>
@@ -93,7 +94,7 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
   return (
     <div className="page printable" data-print="menu">
       <PageHeader
-        icon="🗓"
+        icon="calendar"
         title={
           renaming ? (
             <input
@@ -107,7 +108,7 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
             />
           ) : (
             <button type="button" className="title-btn" onClick={() => setRenaming(true)} title="Renommer">
-              {menu.name} <span className="title-btn__pen no-print" aria-hidden="true">✎</span>
+              {menu.name} <Icon name="edit" size={18} className="title-btn__pen no-print" />
             </button>
           )
         }
@@ -127,19 +128,21 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
               ＋ Nouvelle semaine
             </button>
             <details className="menu-more">
-              <summary className="btn btn--parchment">⋯ Plus</summary>
+              <summary className="btn btn--secondary">
+                <Icon name="more" size={18} /> Plus
+              </summary>
               <div className="menu-more__list">
                 <button type="button" onClick={() => { actions.duplicateMenu(menu.id); notify('Semaine dupliquée'); }}>
-                  ⧉ Dupliquer la semaine
+                  <Icon name="copy" size={18} /> Dupliquer la semaine
                 </button>
                 <button type="button" onClick={() => window.print()}>
-                  🖨 Imprimer
+                  <Icon name="printer" size={18} /> Imprimer
                 </button>
                 <button type="button" onClick={confirmClear}>
-                  ⌫ Vider les cases
+                  <Icon name="close" size={18} /> Vider les cases
                 </button>
                 <button type="button" className="is-danger" onClick={confirmDelete}>
-                  🗑 Supprimer la semaine
+                  <Icon name="trash" size={18} /> Supprimer la semaine
                 </button>
               </div>
             </details>
@@ -161,14 +164,22 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
           <span>kcal / jour en moyenne</span>
         </div>
         <button type="button" className={`stat stat--link ${conflictCount ? 'is-warning' : 'is-ok'}`} onClick={() => onGoTo('logis')}>
-          <strong>{conflictCount ? `⚠ ${conflictCount}` : '✓'}</strong>
+          <strong>
+            {conflictCount ? (
+              <>
+                <Icon name="warning" size={22} /> {conflictCount}
+              </>
+            ) : (
+              <Icon name="check" size={24} />
+            )}
+          </strong>
           <span>{conflictCount ? 'alertes de profil' : 'compatible avec le logis'}</span>
         </button>
       </div>
 
       {meals.length === 0 && (
         <div className="callout no-print">
-          <span aria-hidden="true">📜</span>
+          <img src={artUrl('livre-de-recettes')} alt="" width="56" height="56" />
           <p>Votre bibliothèque est vide. Créez d’abord quelques recettes, ou demandez-en à l’assistant.</p>
           <button type="button" className="btn btn--primary" onClick={() => onGoTo('recettes')}>
             Aller aux recettes
@@ -237,7 +248,7 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
                           aria-label={`Retirer ${meal.name}`}
                           onClick={() => actions.updateDay(menu.id, d.id, { collations: day.collations.filter((_, j) => j !== i) })}
                         >
-                          ✕
+                          <Icon name="close" size={12} />
                         </button>
                       </span>
                     );

@@ -13,10 +13,10 @@ export const DAYS = [
 ];
 
 export const MEAL_TYPES = [
-  { id: 'dejeuner', label: 'Déjeuner', icon: '☀️' },
-  { id: 'diner', label: 'Dîner', icon: '🥪' },
-  { id: 'souper', label: 'Souper', icon: '🍲' },
-  { id: 'collation', label: 'Collation', icon: '🍎' },
+  { id: 'dejeuner', label: 'Déjeuner' },
+  { id: 'diner', label: 'Dîner' },
+  { id: 'souper', label: 'Souper' },
+  { id: 'collation', label: 'Collation' },
 ];
 
 // Cases d'une journée. « collations » est une liste, les autres un id de repas.

@@ -10,6 +10,7 @@ import { MACROS, MEAL_TYPES } from '../data/defaults.js';
 import { resizeImageFile } from '../utils/files.js';
 import { formatQuantity, formatUnit, parseIngredient } from '../utils/ingredients.js';
 import { Chip, MealImage, Modal, useToast } from './ui.jsx';
+import Icon from './icons.jsx';
 
 export default function MealEditor({ meal, image, members, actions, onClose }) {
   const notify = useToast();
@@ -49,7 +50,7 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
       footer={
         <>
           <button type="button" className="btn btn--danger" onClick={handleDelete}>
-            🗑 Supprimer
+            <Icon name="trash" size={18} /> Supprimer
           </button>
           <button
             type="button"
@@ -59,7 +60,7 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
               notify('Copie créée dans la bibliothèque');
             }}
           >
-            ⧉ Dupliquer
+            <Icon name="copy" size={18} /> Dupliquer
           </button>
           <span className="spacer" />
           <span className="hint">Enregistré automatiquement</span>
@@ -74,7 +75,7 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
           <MealImage meal={meal} image={image} />
           <div className="editor__image-actions">
             <label className="btn btn--parchment btn--sm">
-              📷 {image ? 'Changer la photo' : 'Ajouter une photo'}
+              <Icon name="camera" size={18} /> {image ? 'Changer la photo' : 'Ajouter une photo'}
               <input type="file" accept="image/*" hidden onChange={handleImage} />
             </label>
             {image && (
@@ -102,7 +103,7 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
             <div className="chips">
               {MEAL_TYPES.map((t) => (
                 <Chip key={t.id} active={meal.mealTypes?.includes(t.id)} onClick={() => toggle('mealTypes', t.id)}>
-                  {t.icon} {t.label}
+                  {t.label}
                 </Chip>
               ))}
             </div>
@@ -210,7 +211,7 @@ function ShoppingPreview({ lines = [] }) {
             {p.quantity ? ` · ${[formatQuantity(p.quantity), formatUnit(p.unit, p.quantity)].filter(Boolean).join(' ')}` : ''}
           </em>
         ))}
-        {home.length > 0 && <small> 🏠 déjà à la maison : {[...new Set(home.flatMap((p) => p.basics))].join(', ')}</small>}
+        {home.length > 0 && <small>Déjà à la maison : {[...new Set(home.flatMap((p) => p.basics))].join(', ')}</small>}
       </div>
     </div>
   );

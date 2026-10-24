@@ -1,0 +1,193 @@
+/* HearthSmith - design tokens reference
+   V1.0. Import from existing styles or merge carefully.
+   This file deliberately does not restyle all HTML elements globally.
+   Actual assets must be verified in /public before component usage.
+*/
+
+:root {
+  /* Core materials */
+  --hs-wood-deep: #1b1008;
+  --hs-wood: #25160c;
+  --hs-wood-raised: #352012;
+  --hs-canvas: #f5efe4;
+  --hs-parchment: #fff8ea;
+  --hs-parchment-mid: #f8ecd5;
+  --hs-parchment-aged: #ecd8b6;
+
+  /* Typography and contrast */
+  --hs-ink: #2b1608;
+  --hs-ink-muted: #634a32;
+  --hs-on-dark: #fff3dc;
+
+  /* Accent and state */
+  --hs-copper: #b96f2c;
+  --hs-copper-light: #e3a45c;
+  --hs-copper-dark: #794219;
+  --hs-gold: #c28a36;
+  --hs-forest: #244f36;
+  --hs-forest-hover: #35623e;
+  --hs-forest-dark: #183925;
+  --hs-danger: #922f26;
+  --hs-warning: #925b19;
+  --hs-success: #24603d;
+  --hs-info: #305e72;
+  --hs-border: #bda27b;
+  --hs-border-dark: #80552c;
+
+  /* Typography: only load remote fonts if this suits the application's deployment */
+  --hs-font-heading: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --hs-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --hs-font-editorial: 'Alegreya', Georgia, serif;
+  --hs-text-body: 1rem;
+  --hs-text-small: 0.875rem;
+  --hs-text-micro: 0.75rem;
+  --hs-text-h1: clamp(1.625rem, 2.25vw, 2rem);
+  --hs-text-h2: clamp(1.375rem, 1.8vw, 1.5625rem);
+  --hs-text-h3: clamp(1.125rem, 1.4vw, 1.25rem);
+
+  /* Spacing */
+  --hs-space-1: 0.25rem;
+  --hs-space-2: 0.5rem;
+  --hs-space-3: 0.75rem;
+  --hs-space-4: 1rem;
+  --hs-space-6: 1.5rem;
+  --hs-space-8: 2rem;
+  --hs-space-12: 3rem;
+  --hs-space-16: 4rem;
+
+  /* Shapes and depth */
+  --hs-radius-input: 0.625rem;
+  --hs-radius-button: 0.625rem;
+  --hs-radius-card: 0.875rem;
+  --hs-radius-panel: 1rem;
+  --hs-shadow-panel: 0 5px 20px rgba(43, 22, 8, 0.10);
+  --hs-shadow-raised: 0 12px 30px rgba(27, 16, 8, 0.16);
+  --hs-focus-ring: 0 0 0 3px rgba(194, 138, 54, 0.65);
+  --hs-duration-fast: 150ms;
+  --hs-duration-normal: 220ms;
+  --hs-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+/* Opt-in component foundations: no universal selectors */
+.hs-app {
+  min-width: 0;
+  min-height: 100vh;
+  background: var(--hs-canvas);
+  color: var(--hs-ink);
+  font-family: var(--hs-font-ui);
+  font-size: var(--hs-text-body);
+  line-height: 1.55;
+}
+
+.hs-app__sidebar {
+  color: var(--hs-on-dark);
+  background-color: var(--hs-wood);
+  background-image:
+    linear-gradient(180deg, rgba(27, 16, 8, 0.33), rgba(27, 16, 8, 0.65)),
+    url('/hearthsmith/textures/dark-wood-bg.webp');
+  background-repeat: no-repeat, repeat;
+  background-size: cover, 720px auto;
+}
+
+.hs-panel {
+  position: relative;
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  color: var(--hs-ink);
+  background-color: var(--hs-parchment);
+  background-image:
+    linear-gradient(rgba(255, 248, 234, 0.78), rgba(255, 248, 234, 0.78)),
+    url('/hearthsmith/textures/parchment-bg.webp');
+  background-repeat: no-repeat, repeat;
+  background-size: cover, 760px auto;
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-panel);
+  box-shadow: var(--hs-shadow-panel);
+}
+
+.hs-heading {
+  color: var(--hs-ink);
+  font-family: var(--hs-font-heading);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  line-height: 1.18;
+}
+
+.hs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--hs-radius-button);
+  font: 600 0.9375rem/1.25 var(--hs-font-ui);
+  cursor: pointer;
+  transition: background-color var(--hs-duration-fast) var(--hs-ease),
+              border-color var(--hs-duration-fast) var(--hs-ease),
+              box-shadow var(--hs-duration-fast) var(--hs-ease);
+}
+
+.hs-button--primary {
+  color: var(--hs-on-dark);
+  background-color: var(--hs-forest);
+  border-color: var(--hs-forest-dark);
+  /* Apply green-metal.webp selectively once text contrast is checked */
+}
+.hs-button--primary:hover { background-color: var(--hs-forest-hover); }
+.hs-button--primary:active { background-color: var(--hs-forest-dark); }
+.hs-button--secondary {
+  color: var(--hs-ink);
+  background-color: var(--hs-parchment-mid);
+  border-color: var(--hs-border-dark);
+}
+.hs-button--danger { color: #fff; background: var(--hs-danger); }
+.hs-button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.hs-app :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--hs-gold);
+  outline-offset: 3px;
+}
+
+.hs-input {
+  min-height: 44px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.625rem 0.75rem;
+  color: var(--hs-ink);
+  background: #fffdf7;
+  border: 1px solid var(--hs-border-dark);
+  border-radius: var(--hs-radius-input);
+  font: 400 1rem/1.4 var(--hs-font-ui);
+}
+
+.hs-responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--hs-space-4);
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .hs-panel { padding: 1rem; }
+  .hs-responsive-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-app *, .hs-app *::before, .hs-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .hs-app, .hs-panel {
+    color: #111 !important;
+    background: #fff !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+}

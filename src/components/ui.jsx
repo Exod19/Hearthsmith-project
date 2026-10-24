@@ -3,16 +3,24 @@
 // =============================================================
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { MEAL_TYPES } from '../data/defaults.js';
+import Icon from './icons.jsx';
 
-export function PageHeader({ icon, title, subtitle, actions, children }) {
+export const artUrl = (name) => `${import.meta.env.BASE_URL}hearthsmith/nordic-cottage-v2/illustrations/${name}-256.webp`;
+
+export function PageHeader({ icon, art, title, subtitle, actions, children }) {
   return (
     <header className="page-header">
+      {art ? (
+        <img className="page-header__art" src={artUrl(art)} alt="" width="72" height="72" />
+      ) : (
+        icon && (
+          <span className="page-header__icon" aria-hidden="true">
+            <Icon name={icon} size={26} />
+          </span>
+        )
+      )}
       <div className="page-header__text">
-        <h1>
-          {icon && <span className="page-header__icon" aria-hidden="true">{icon}</span>}
-          {title}
-        </h1>
+        <h1>{title}</h1>
         {subtitle && <p>{subtitle}</p>}
       </div>
       {actions && <div className="page-header__actions">{actions}</div>}
@@ -28,7 +36,7 @@ export function Card({ title, icon, actions, className = '', children, ...rest }
         <div className="card__head">
           {title && (
             <h2 className="card__title">
-              {icon && <span aria-hidden="true">{icon}</span>}
+              {icon && <Icon name={icon} size={18} />}
               {title}
             </h2>
           )}
@@ -40,10 +48,16 @@ export function Card({ title, icon, actions, className = '', children, ...rest }
   );
 }
 
-export function EmptyState({ icon = '🕯️', title, children, action }) {
+export function EmptyState({ icon = 'leaf', art, title, children, action }) {
   return (
     <div className="empty">
-      <span className="empty__icon" aria-hidden="true">{icon}</span>
+      {art ? (
+        <img className="empty__art" src={artUrl(art)} alt="" width="120" height="120" loading="lazy" />
+      ) : (
+        <span className="empty__icon" aria-hidden="true">
+          <Icon name={icon} size={36} />
+        </span>
+      )}
       <h3>{title}</h3>
       {children && <p>{children}</p>}
       {action}
@@ -78,7 +92,7 @@ export function Modal({ title, onClose, children, footer, size = 'md' }) {
         <div className="modal__head">
           <h2>{title}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Fermer">
-            ✕
+            <Icon name="close" />
           </button>
         </div>
         <div className="modal__body">{children}</div>
@@ -88,15 +102,13 @@ export function Modal({ title, onClose, children, footer, size = 'md' }) {
   );
 }
 
-const placeholderIcon = (meal) =>
-  MEAL_TYPES.find((t) => meal?.mealTypes?.[0] === t.id)?.icon || '🍽️';
-
-export function MealImage({ meal, image, className = '' }) {
+// Sans photo : une couleur unie et un pictogramme discret (le repas reste le héros quand il y en a une).
+export function MealImage({ image, className = '' }) {
   return image ? (
     <img className={`meal-image ${className}`} src={image} alt="" loading="lazy" />
   ) : (
     <div className={`meal-image meal-image--placeholder ${className}`} aria-hidden="true">
-      <span>{placeholderIcon(meal)}</span>
+      <Icon name="bowl" size={32} />
     </div>
   );
 }
