@@ -101,8 +101,8 @@ export default function App() {
 
       <header className="topbar no-print">
         <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="Hearthsmith, accueil">
-          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="120" height="120" />
-          <img src={`${BASE}brand/wordmark.webp`} alt="Hearthsmith" className="brand__wordmark" height="52" />
+          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="140" height="140" />
+          <img src={`${BASE}brand/wordmark.webp`} alt="Hearthsmith" className="brand__wordmark" height="84" />
         </button>
 
         <div className="topbar__right">

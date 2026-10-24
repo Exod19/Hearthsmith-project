@@ -164,23 +164,20 @@ img {
   background: none;
 }
 
+/* Logo officiel : fichiers d'origine redimensionnés sans recadrage (voir docs/ guide de marque). */
 .brand__crest {
-  width: 108px;
-  height: 108px;
-  margin-top: 30px;
+  width: 140px;
+  height: 140px;
+  margin-top: 40px;
   object-fit: contain;
-  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.6));
-  transition: transform 0.25s ease;
-}
-
-.brand:hover .brand__crest {
-  transform: rotate(-4deg) scale(1.03);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
 }
 
 .brand__wordmark {
-  height: 46px;
+  height: 84px;
   width: auto;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  margin-left: -1.5rem;
+  object-fit: contain;
 }
 
 .topbar__right {
@@ -1895,14 +1892,16 @@ textarea.input {
     height: 60px;
   }
 
+  /* Sur mobile, l'emblème reste entier dans la barre (pas de débordement rogné). */
   .brand__crest {
-    width: 64px;
-    height: 64px;
-    margin-top: 14px;
+    width: 60px;
+    height: 60px;
+    margin-top: 0;
   }
 
   .brand__wordmark {
-    height: 32px;
+    height: 58px;
+    margin-left: -1rem;
   }
 
   .household__text,

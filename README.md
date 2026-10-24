@@ -35,8 +35,9 @@ src/
   utils/                ingrédients, épicerie, nutrition/alertes, stockage, fichiers
   components/           un composant par onglet + ui.jsx (briques communes)
   styles.css            système visuel (bois, parchemin, cuivre)
-public/                 images optimisées servies par le site
-design/                 fichiers sources haute résolution (non publiés)
+public/brand/           logo officiel (fichiers d'origine) + versions allégées crest.webp / wordmark.webp
+public/hearthsmith/     textures d'origine ; public/textures/ = versions allégées utilisées par l'app
+docs/                   guide de marque (référence visuelle)
 ```
 
 ## Déploiement
