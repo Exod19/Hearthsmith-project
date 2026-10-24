@@ -2,7 +2,7 @@
 //  storage.js — Persistance locale, migration et sauvegardes
 // =============================================================
 
-import { DAYS, createBlankDay, createInitialState, createMember, DEFAULT_MEMBERS } from '../data/defaults.js';
+import { DAYS, createBlankDay, createInitialState, createMember, createPriceSettings, DEFAULT_MEMBERS } from '../data/defaults.js';
 import { ingredientToLine } from './ingredients.js';
 
 const STORAGE_KEY = 'family-meal-planner-state';
@@ -92,6 +92,7 @@ export function normalizeState(raw) {
     images: isObject(raw.images) ? raw.images : {},
     groceryChecks: isObject(raw.groceryChecks) ? raw.groceryChecks : isObject(raw.checkedItems) ? raw.checkedItems : {},
     householdMembers: membersRaw.map(normalizeMember).filter(Boolean),
+    prices: { ...createPriceSettings(), ...(isObject(raw.prices) ? raw.prices : {}) },
   };
 }
 

@@ -1859,6 +1859,472 @@ textarea.input {
 }
 
 /* =============================================================
+   Prix et commande (épiceries.ca)
+   ============================================================= */
+
+.segmented {
+  display: inline-flex;
+  justify-self: start;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 248, 230, 0.8);
+}
+
+.segmented button {
+  min-height: 40px;
+  padding: 0.4rem 1rem;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font-weight: 600;
+}
+
+.segmented .is-active {
+  color: var(--cream);
+  background: var(--green);
+}
+
+.prices {
+  display: grid;
+  gap: 1rem;
+}
+
+.prices__stores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+
+.prices__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5f3814;
+}
+
+.prices__progress {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 248, 230, 0.85);
+}
+
+.prices__credit {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.prices__credit a {
+  color: var(--green-2);
+}
+
+.price-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.price-total {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 250, 238, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.price-total span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.price-total strong {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.price-total small {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.price-total--best {
+  color: var(--cream);
+  border-color: var(--green);
+  background: linear-gradient(160deg, var(--green-2), var(--green));
+}
+
+.price-total--best span,
+.price-total--best small {
+  color: rgba(255, 248, 222, 0.85);
+}
+
+.price-total.is-empty {
+  opacity: 0.6;
+}
+
+.price-tips ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tip {
+  padding: 0.55rem 0.8rem;
+  border-left: 4px solid var(--line-strong);
+  border-radius: 0 8px 8px 0;
+  background: rgba(255, 252, 242, 0.85);
+  font-size: 0.9rem;
+}
+
+.tip--great,
+.tip--good {
+  border-left-color: #3f8a4d;
+}
+
+.tip--warn {
+  border-left-color: #b9741f;
+}
+
+.price-table {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.price-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) repeat(var(--cols), minmax(0, 1.4fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.price-row--head span {
+  padding: 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-dark);
+}
+
+.price-row__item {
+  display: grid;
+  align-content: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.4rem;
+}
+
+.price-row__item small {
+  color: var(--ink-soft);
+}
+
+.price-row__item .link {
+  justify-self: start;
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.offer {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 252, 242, 0.88);
+  min-width: 0;
+}
+
+.offer.is-best {
+  border-color: var(--green-2);
+  box-shadow: 0 0 0 2px rgba(53, 110, 74, 0.25);
+  background: rgba(236, 245, 228, 0.95);
+}
+
+.offer.is-missing {
+  background: rgba(255, 250, 238, 0.45);
+  border-style: dashed;
+}
+
+.offer__product {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.offer__product i {
+  width: 40px;
+  height: 40px;
+}
+
+.offer__product img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.offer__product span {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.offer__product small {
+  display: block;
+  color: var(--ink-soft);
+}
+
+.offer__product:hover span {
+  text-decoration: underline;
+}
+
+.offer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.offer__cost {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.offer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.offer__badges:empty {
+  display: none;
+}
+
+.offer__none,
+.offer__loading {
+  align-self: center;
+  justify-self: center;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.offer__none:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #fffaf0;
+}
+
+.stepper button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  font-weight: 700;
+}
+
+.stepper b {
+  min-width: 26px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.badge--deal {
+  background: #b54a2a;
+  font-style: normal;
+}
+
+.badge--best {
+  background: var(--green-2);
+  font-style: normal;
+}
+
+.store-chip--metro.is-active {
+  background: #c8102e;
+  border-color: #c8102e;
+}
+
+.store-chip--maxi.is-active {
+  background: #e2231a;
+  border-color: #b91c14;
+  color: #fff;
+}
+
+.store-chip--superc.is-active {
+  background: #00843d;
+  border-color: #00843d;
+}
+
+.product-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.product-list button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 252, 242, 0.9);
+  text-align: left;
+}
+
+.product-list button:hover,
+.product-list .is-current {
+  border-color: var(--green-2);
+  background: rgba(236, 245, 228, 0.95);
+}
+
+.product-list img,
+.product-list__ph {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.product-list small {
+  display: block;
+  color: var(--ink-soft);
+}
+
+.product-list__price {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+  font-weight: 700;
+}
+
+.order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.order-store {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 252, 242, 0.85);
+}
+
+.order-store header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.order-store ol {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.88rem;
+}
+
+.order-store li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.order-store li a {
+  color: var(--ink);
+}
+
+.order-store li.is-done {
+  opacity: 0.55;
+}
+
+.order-store li.is-done a {
+  text-decoration: line-through;
+}
+
+.order-store li.is-next a {
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .price-row--head {
+    display: none;
+  }
+
+  .price-row {
+    grid-template-columns: 1fr;
+    padding: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: rgba(255, 248, 230, 0.6);
+  }
+
+  .offer::before {
+    content: attr(data-store);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gold-dark);
+  }
+
+  .segmented {
+    width: 100%;
+  }
+
+  .segmented button {
+    flex: 1;
+  }
+}
+
+/* =============================================================
    Adaptation aux écrans
    ============================================================= */
 

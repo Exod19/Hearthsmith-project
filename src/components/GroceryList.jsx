@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { exportGroceryCSV } from '../utils/files.js';
 import { formatQuantity, formatUnit } from '../utils/ingredients.js';
 import { Card, EmptyState, PageHeader, Progress, useToast } from './ui.jsx';
+import PriceComparison from './PriceComparison.jsx';
 
 const CATEGORY_ICONS = {
   'Fruits et légumes': '🥕',
@@ -17,10 +18,11 @@ const CATEGORY_ICONS = {
   Autres: '🧺',
 };
 
-export default function GroceryList({ menu, groceryList, checks, actions, onGoTo }) {
+export default function GroceryList({ menu, groceryList, checks, prices, actions, onGoTo }) {
   const notify = useToast();
   const [hideDone, setHideDone] = useState(false);
   const [extra, setExtra] = useState('');
+  const [view, setView] = useState('liste');
 
   const total = groceryList.items.length;
   const done = groceryList.items.filter((i) => checks[i.key]?.done).length;
@@ -59,7 +61,20 @@ export default function GroceryList({ menu, groceryList, checks, actions, onGoTo
         }
       />
 
-      {total === 0 && !(menu.extraGroceries || []).length ? (
+      {total > 0 && (
+        <div className="segmented no-print" role="tablist" aria-label="Affichage de l’épicerie">
+          <button type="button" role="tab" aria-selected={view === 'liste'} className={view === 'liste' ? 'is-active' : ''} onClick={() => setView('liste')}>
+            ☑ Liste
+          </button>
+          <button type="button" role="tab" aria-selected={view === 'prix'} className={view === 'prix' ? 'is-active' : ''} onClick={() => setView('prix')}>
+            💲 Prix et commande
+          </button>
+        </div>
+      )}
+
+      {view === 'prix' && total > 0 ? (
+        <PriceComparison groceryList={groceryList} checks={checks} prices={prices} actions={actions} />
+      ) : total === 0 && !(menu.extraGroceries || []).length ? (
         <EmptyState
           icon="🧺"
           title="Rien à acheter pour l’instant"

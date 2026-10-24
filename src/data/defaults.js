@@ -302,6 +302,9 @@ function sampleMenu() {
   return menu;
 }
 
+// Comparaison de prix : magasins retenus et choix manuels de produits.
+export const createPriceSettings = () => ({ stores: ['metro', 'maxi', 'superc'], picks: {}, packs: {}, skips: {} });
+
 export function createInitialState() {
   const menu = sampleMenu();
   return {
@@ -311,6 +314,7 @@ export function createInitialState() {
     activeMenuId: menu.id,
     images: {},
     groceryChecks: {},
+    prices: createPriceSettings(),
     householdMembers: DEFAULT_MEMBERS,
   };
 }
@@ -324,6 +328,7 @@ export function createEmptyState() {
     activeMenuId: menu.id,
     images: {},
     groceryChecks: {},
+    prices: createPriceSettings(),
     householdMembers: DEFAULT_MEMBERS,
   };
 }

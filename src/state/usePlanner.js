@@ -166,6 +166,11 @@ export function usePlanner({ onSaveError } = {}) {
         set((s) => ({ ...s, groceryChecks: { ...s.groceryChecks, [menuId]: {} } }));
       },
 
+      // ---- Prix ----
+      updatePrices(fn) {
+        set((s) => ({ ...s, prices: fn(s.prices) }));
+      },
+
       // ---- Membres ----
       addMember() {
         const member = createMember();

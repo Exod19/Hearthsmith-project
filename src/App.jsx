@@ -162,7 +162,7 @@ export default function App() {
           />
         )}
         {tab === 'recettes' && <MealLibrary meals={meals} images={images} menu={menu} onEdit={setEditMealId} onCreate={createMeal} onGoTo={goTo} />}
-        {tab === 'epicerie' && <GroceryList menu={menu} groceryList={groceryList} checks={groceryChecks[menu.id] || {}} actions={actions} onGoTo={goTo} />}
+        {tab === 'epicerie' && <GroceryList menu={menu} groceryList={groceryList} checks={groceryChecks[menu.id] || {}} prices={state.prices} actions={actions} onGoTo={goTo} />}
         {tab === 'prep' && <MealPrep menu={menu} mealsById={mealsById} images={images} actions={actions} onOpenMeal={setViewMealId} onGoTo={goTo} />}
         {tab === 'logis' && (
           <HouseholdMembers members={members} menu={menu} mealsById={mealsById} actions={actions} onOpenMeal={setViewMealId} onAskAssistant={askAssistant} />
