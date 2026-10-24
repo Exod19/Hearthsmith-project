@@ -2,7 +2,8 @@
 //  ExportPanel.jsx — Réglages : sauvegarde, import, remise à zéro
 // =============================================================
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { getImageSettings, IMAGE_PROVIDERS, saveImageSetting } from '../utils/imageGen.js';
 import { exportBackup } from '../utils/files.js';
 import { readBackup, storageUsage } from '../utils/storage.js';
 import { Card, PageHeader, Progress, useToast } from './ui.jsx';
@@ -50,6 +51,7 @@ export default function ExportPanel({ state, actions }) {
           </label>
         </Card>
         <AISettings />
+        <ImageSettings />
         <Card title="Sauvegarde" icon="download">
           <p>Téléchargez un fichier avec toutes vos recettes, semaines, profils et photos, ou restaurez-en un.</p>
           <div className="toolbar">
@@ -102,5 +104,76 @@ export default function ExportPanel({ state, actions }) {
         </Card>
       </div>
     </div>
+  );
+}
+
+/** Photos générées : fournisseur, modèle, clé, génération automatique. */
+function ImageSettings() {
+  const [settings, setSettings] = useState(getImageSettings);
+  const [ownKey, setOwnKey] = useState(() => {
+    try {
+      return localStorage.getItem('hearthsmith_img_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
+  const update = (key, value) => {
+    saveImageSetting(key, String(value));
+    setSettings(getImageSettings());
+  };
+
+  return (
+    <Card title="Photos des recettes" icon="camera" className="ai-settings">
+      <p>Chaque nouvelle recette peut recevoir une photo générée dans le style HearthSmith : lumière naturelle, bois, lin, ambiance d’automne.</p>
+      <div className="field-row">
+        <label className="field">
+          <span>Génération</span>
+          <select className="input" value={settings.provider} onChange={(e) => update('provider', e.target.value)}>
+            {Object.entries(IMAGE_PROVIDERS).map(([id, p]) => (
+              <option key={id} value={id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {settings.provider === 'openai' && (
+          <>
+            <label className="field">
+              <span>Modèle</span>
+              <select className="input" value={settings.model} onChange={(e) => update('model', e.target.value)}>
+                {IMAGE_PROVIDERS.openai.models.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Clé OpenAI</span>
+              <input
+                className="input"
+                type="password"
+                autoComplete="off"
+                value={ownKey}
+                placeholder={settings.apiKey ? 'clé de l’assistant utilisée' : 'sk-…'}
+                onChange={(e) => {
+                  setOwnKey(e.target.value);
+                  update('api_key', e.target.value);
+                }}
+              />
+            </label>
+          </>
+        )}
+      </div>
+      {settings.provider !== 'off' && (
+        <label className="switch">
+          <input type="checkbox" checked={settings.auto} onChange={(e) => update('auto', e.target.checked)} />
+          <span>
+            Générer automatiquement pour les recettes créées par l’assistant
+            <small>Sinon, utilisez « Générer une photo » dans la fiche de la recette.</small>
+          </span>
+        </label>
+      )}
+      {settings.provider === 'pollinations' && <p className="hint">Gratuit, sans compte : qualité variable, petit filigrane, une image toutes les 45 secondes.</p>}
+      {settings.provider === 'openai' && <p className="hint">Facturé par OpenAI sur votre compte (environ 0,04 $ par photo avec gpt-image-1). gpt-image-1 peut exiger une organisation vérifiée ; sinon, choisissez dall-e-3.</p>}
+    </Card>
   );
 }

@@ -33,6 +33,12 @@ export function usePlanner({ onSaveError } = {}) {
     return () => clearTimeout(t);
   }, [state]);
 
+  // Dernier état connu, pour les actions qui doivent renvoyer un résultat (ids créés).
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+
   const actions = useMemo(() => {
     const set = setState;
     return {
@@ -199,20 +205,22 @@ export function usePlanner({ onSaveError } = {}) {
       },
 
       // ---- Assistant ----
+      /** Applique une proposition de l'assistant ; renvoie les recettes créées. */
       applyAIResult(result) {
+        const current = stateRef.current;
+        const memberIds = new Set(current.householdMembers.map((m) => m.id));
+        const clean = (meal) => ({
+          ...meal,
+          ingredients: (meal.ingredients || []).map(ingredientToLine).filter(Boolean),
+          assignedTo: (meal.assignedTo || []).filter((id) => memberIds.has(id)),
+        });
+        const created = (Array.isArray(result.createMeals) ? result.createMeals : []).map((meal) =>
+          createEmptyMeal({ ...clean(meal), id: meal.id && !current.meals.some((m) => m.id === meal.id) ? meal.id : uid('meal') })
+        );
+
         set((s) => {
           let next = { ...s };
-          const memberIds = new Set(s.householdMembers.map((m) => m.id));
-          const clean = (meal) => ({
-            ...meal,
-            ingredients: (meal.ingredients || []).map(ingredientToLine).filter(Boolean),
-            assignedTo: (meal.assignedTo || []).filter((id) => memberIds.has(id)),
-          });
-
-          if (Array.isArray(result.createMeals) && result.createMeals.length) {
-            const created = result.createMeals.map((meal) => createEmptyMeal({ ...clean(meal), id: meal.id && !s.meals.some((m) => m.id === meal.id) ? meal.id : uid('meal') }));
-            next.meals = [...next.meals, ...created];
-          }
+          if (created.length) next.meals = [...next.meals, ...created];
           if (Array.isArray(result.updateMeals) && result.updateMeals.length) {
             next.meals = next.meals.map((meal) => {
               const patch = result.updateMeals.find((u) => u.id === meal.id);
@@ -253,6 +261,7 @@ export function usePlanner({ onSaveError } = {}) {
           }
           return next;
         });
+        return created;
       },
 
       // ---- Sauvegarde ----

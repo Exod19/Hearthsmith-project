@@ -8,7 +8,7 @@ Version en ligne : https://exod19.github.io/Hearthsmith-project/
 
 - **Accueil** : salutation, recherche de recettes, résumé de la semaine (recettes, repas planifiés, articles à acheter, préparation), repas du jour et suggestions.
 - **Semaine** : planifiez déjeuner, dîner, souper et collations en cliquant sur une case. Totaux kcal et protéines par jour, plusieurs semaines possibles.
-- **Recettes** : bibliothèque avec recherche par nom ou ingrédient, filtres par moment du repas, photos réduites automatiquement.
+- **Recettes** : bibliothèque avec recherche par nom ou ingrédient, filtres par moment du repas, photos importées ou générées dans le style de la marque (OpenAI ou Pollinations, réglable).
 - **Épicerie** : liste générée à partir du menu, quantités additionnées et classées par rayon, articles ajoutés à la main, export CSV et impression.
 - **Prix et commande** (dans Épicerie) : compare Metro, Maxi et les autres enseignes avec l'API publique [épiceries.ca](https://epiceries.ca/developers). Choix automatique du produit (modifiable), nombre d'emballages, spéciaux, conseils tirés de l'historique de prix, meilleur plan entre magasins, économies par rapport à tout acheter au même endroit, puis liste par magasin pour remplir le panier en ligne produit par produit.
 - **Meal prep** : recettes à cuisiner en lot ou au jour le jour, cases à cocher, notes par jour.
@@ -34,7 +34,7 @@ src/
   App.jsx               coquille : en-tête, navigation (#/onglet), fenêtres partagées
   state/usePlanner.js   état global, actions et sauvegarde automatique
   data/defaults.js      constantes, profils et recettes d'exemple
-  utils/                ingrédients, épicerie, prix (épiceries.ca), nutrition/alertes, stockage, fichiers
+  utils/                ingrédients, épicerie, prix (épiceries.ca), photos générées, nutrition/alertes, stockage, fichiers
   components/           un composant par onglet + ui.jsx (briques communes)
   styles.css            système visuel « Nordic Cottage » (guide de marque V2)
   components/icons.jsx  pictogrammes SVG au trait

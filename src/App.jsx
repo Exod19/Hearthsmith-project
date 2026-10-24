@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DAYS } from './data/defaults.js';
 import { usePlanner } from './state/usePlanner.js';
+import { useImageQueue } from './state/useImageQueue.js';
 import { generateGroceryList } from './utils/grocery.js';
 import { findConflicts } from './utils/nutrition.js';
 
@@ -47,6 +48,7 @@ export default function App() {
   const [state, actions] = usePlanner({
     onSaveError: () => notify('Stockage plein : retirez quelques photos ou faites une sauvegarde.', { tone: 'error' }),
   });
+  const imageQueue = useImageQueue({ setImage: actions.setImage, notify });
   const [tab, setTab] = useState(tabFromHash);
   const [viewMealId, setViewMealId] = useState(null);
   const [editMealId, setEditMealId] = useState(null);
@@ -207,7 +209,16 @@ export default function App() {
             <HouseholdMembers members={members} menu={menu} mealsById={mealsById} actions={actions} onOpenMeal={setViewMealId} onAskAssistant={askAssistant} />
           )}
           {tab === 'assistant' && (
-            <AIAssistant meals={meals} menu={menu} members={members} actions={actions} draft={aiDraft} onDraftUsed={clearDraft} onGoTo={goTo} />
+            <AIAssistant
+              meals={meals}
+              menu={menu}
+              members={members}
+              actions={actions}
+              draft={aiDraft}
+              onDraftUsed={clearDraft}
+              onGoTo={goTo}
+              onGenerateImages={imageQueue.enqueue}
+            />
           )}
           {tab === 'reglages' && <ExportPanel state={state} actions={actions} />}
         </main>
@@ -216,6 +227,15 @@ export default function App() {
           <p>HearthSmith garde vos recettes, menus et photos dans ce navigateur. Pensez à faire une sauvegarde de temps en temps.</p>
         </footer>
       </div>
+
+      {imageQueue.status && (
+        <div className="image-progress no-print" role="status">
+          <Icon name="sparkle" size={18} />
+          <span>
+            Génération des photos {Math.min(imageQueue.status.done + 1, imageQueue.status.total)}/{imageQueue.status.total} · {imageQueue.status.current}
+          </span>
+        </div>
+      )}
 
       {viewMeal && (
         <MealDetail
@@ -230,7 +250,16 @@ export default function App() {
         />
       )}
       {editMeal && (
-        <MealEditor key={editMeal.id} meal={editMeal} image={images[editMeal.id]} members={members} actions={actions} onClose={() => setEditMealId(null)} />
+        <MealEditor
+          key={editMeal.id}
+          meal={editMeal}
+          image={images[editMeal.id]}
+          members={members}
+          actions={actions}
+          onClose={() => setEditMealId(null)}
+          onGenerateImage={(meal) => imageQueue.enqueue([meal])}
+          generating={imageQueue.status?.current === editMeal.name}
+        />
       )}
     </div>
   );

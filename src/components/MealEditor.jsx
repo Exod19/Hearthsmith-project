@@ -12,7 +12,7 @@ import { formatQuantity, formatUnit, parseIngredient } from '../utils/ingredient
 import { Chip, MealImage, Modal, useToast } from './ui.jsx';
 import Icon from './icons.jsx';
 
-export default function MealEditor({ meal, image, members, actions, onClose }) {
+export default function MealEditor({ meal, image, members, actions, onClose, onGenerateImage, generating }) {
   const notify = useToast();
   // Texte brut gardé localement pour permettre les lignes vides pendant la saisie.
   const [ingredientsText, setIngredientsText] = useState(() => (meal.ingredients || []).join('\n'));
@@ -78,6 +78,17 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
               <Icon name="camera" size={18} /> {image ? 'Changer la photo' : 'Ajouter une photo'}
               <input type="file" accept="image/*" hidden onChange={handleImage} />
             </label>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              disabled={!meal.name || generating}
+              title={meal.name ? 'Photo générée dans le style HearthSmith' : 'Donnez d’abord un nom à la recette'}
+              onClick={() => {
+                if (!onGenerateImage(meal)) notify('Activez la génération d’images dans Réglages.', { tone: 'error' });
+              }}
+            >
+              <Icon name="sparkle" size={18} /> {generating ? 'Génération…' : 'Générer une photo'}
+            </button>
             {image && (
               <button type="button" className="btn btn--ghost btn--sm" onClick={() => actions.clearImage(meal.id)}>
                 Retirer

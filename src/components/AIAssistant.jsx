@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { DAYS, MEAL_TYPES } from '../data/defaults.js';
 import { Card, PageHeader, useToast } from './ui.jsx';
 import Icon from './icons.jsx';
+import { getImageSettings } from '../utils/imageGen.js';
 
 const SYSTEM_PROMPT = `
 Tu es l'assistant nutritionnel et organisationnel d'une famille québécoise.
@@ -323,7 +324,7 @@ export function AISettings() {
   );
 }
 
-export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo }) {
+export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo, onGenerateImages }) {
   const notify = useToast();
   // La connexion se règle dans Réglages ; ici on la lit seulement.
   const [providerId] = useState(() => STORE.get('provider', 'groq'));
@@ -404,7 +405,9 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
   }
 
   function applyPending() {
-    actions.applyAIResult(pending);
+    const created = actions.applyAIResult(pending);
+    // Une photo dans le style de la marque pour chaque nouvelle recette (si activé dans Réglages).
+    if (created.length && getImageSettings().auto) onGenerateImages?.(created);
     const parts = [];
     if (pending.createMeals?.length) parts.push(`${pending.createMeals.length} recette(s) ajoutée(s)`);
     if (pending.updateMeals?.length) parts.push(`${pending.updateMeals.length} recette(s) mise(s) à jour`);
