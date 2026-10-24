@@ -42,7 +42,7 @@ Format de réponse :
 `;
 
 const PROVIDERS = {
-  groq: { label: 'Groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile', mode: 'chat', keyHint: 'gsk_…' },
+  groq: { label: 'Groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'openai/gpt-oss-120b', mode: 'chat', keyHint: 'gsk_…' },
   openai: { label: 'OpenAI', endpoint: 'https://api.openai.com/v1/responses', model: 'gpt-5-mini', mode: 'responses', keyHint: 'sk-…' },
   custom: { label: 'Compatible OpenAI', endpoint: '', model: '', mode: 'chat', keyHint: 'clé API' },
 };
@@ -112,18 +112,41 @@ function buildContext({ meals, menu, members }) {
   };
 }
 
-async function callAI({ provider, endpoint, model, apiKey, request, context, history }) {
+// ---- Modèles offerts par le fournisseur ----
+// Les fournisseurs retirent régulièrement des modèles : on lit la liste réelle avec la clé.
+const NOT_CHAT = /whisper|tts|guard|embed|moderation|audio|image|dall-e|transcribe|realtime|search|playai|orpheus|compound|babbage|davinci/i;
+const PREFERRED_MODELS = [/gpt-oss-120b/, /llama-4-maverick/, /llama.*70b/, /kimi-k2/, /qwen3?-32b/, /gpt-5-mini/, /gpt-4\.1-mini/, /gpt-4o-mini/];
+
+async function listModels(endpoint, apiKey) {
+  const url = endpoint.replace(/\/(chat\/completions|responses)\/?$/, '/models');
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+  if (!res.ok) throw new Error(res.status === 401 ? 'Clé API refusée.' : `Liste des modèles indisponible (${res.status}).`);
+  const data = await res.json();
+  return (data.data || [])
+    .filter((m) => m.active !== false)
+    .map((m) => m.id)
+    .filter((id) => !NOT_CHAT.test(id))
+    .sort();
+}
+
+const pickModel = (ids) => PREFERRED_MODELS.map((re) => ids.find((id) => re.test(id))).find(Boolean) || ids[0];
+
+async function callAI({ provider, endpoint, model, apiKey, request, context, history, jsonMode = true }) {
   const user = JSON.stringify({ demande: request, contexte: context, historique: history }, null, 1);
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
   const body =
     provider.mode === 'responses'
       ? { model, input: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] }
-      : { model, temperature: 0.3, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] };
+      : { model, temperature: 0.3, ...(jsonMode && { response_format: { type: 'json_object' } }), messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] };
 
   const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
   if (!response.ok) {
-    const details = await response.text().catch(() => '');
-    throw new Error(response.status === 401 ? 'Clé API refusée.' : `Erreur ${response.status} ${details.slice(0, 160)}`);
+    const details = await response.json().catch(() => null);
+    const error = new Error(
+      response.status === 401 ? 'Clé API refusée.' : details?.error?.message || `Erreur ${response.status}`
+    );
+    error.code = details?.error?.code;
+    throw error;
   }
   const data = await response.json();
   const text =
@@ -146,6 +169,8 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
   const [pending, setPending] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [models, setModels] = useState([]);
+  const [modelsError, setModelsError] = useState('');
   const promptRef = useRef(null);
   const logRef = useRef(null);
 
@@ -164,6 +189,36 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, busy]);
+
+  // Liste des modèles disponibles dès qu'une clé est saisie ; corrige un modèle retiré.
+  useEffect(() => {
+    if (!apiKey.trim() || !endpoint) {
+      setModels([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const ids = await listModels(endpoint, apiKey.trim());
+        if (cancelled) return;
+        setModels(ids);
+        setModelsError('');
+        if (ids.length && !ids.includes(model)) {
+          const next = pickModel(ids);
+          setModel(next);
+          STORE.set('model', next);
+        }
+      } catch (err) {
+        if (!cancelled) setModelsError(err.message);
+      }
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // Le modèle courant n'est vérifié qu'au changement de clé ou de fournisseur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, endpoint]);
 
   const save = (key, setter) => (value) => {
     setter(value);
@@ -191,15 +246,24 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
     setMessages((m) => [...m, { role: 'user', content: request }]);
     setPrompt('');
     try {
-      const result = await callAI({
-        provider,
-        endpoint,
-        model,
-        apiKey,
-        request,
-        context,
-        history: messages.slice(-6).map(({ role, content }) => ({ role, content })),
-      });
+      const args = { provider, endpoint, model, apiKey, request, context, history: messages.slice(-6).map(({ role, content }) => ({ role, content })) };
+      let result;
+      try {
+        result = await callAI(args).catch((err) =>
+          // Certains modèles refusent le mode JSON imposé : on réessaie sans.
+          /response_format|json/i.test(err.message) && err.code !== 'model_not_found' ? callAI({ ...args, jsonMode: false }) : Promise.reject(err)
+        );
+      } catch (err) {
+        if (err.code !== 'model_not_found') throw err;
+        // Modèle retiré par le fournisseur : on bascule sur un modèle disponible et on réessaie.
+        const ids = await listModels(endpoint, apiKey);
+        const next = pickModel(ids.filter((id) => id !== model));
+        if (!next) throw err;
+        setModels(ids);
+        save('model', setModel)(next);
+        notify(`Le modèle « ${model} » n’existe plus : bascule sur « ${next} ».`);
+        result = await callAI({ ...args, model: next });
+      }
       setMessages((m) => [...m, { role: 'assistant', content: result.message || 'Proposition prête.', questions: result.questions }]);
       const hasChanges = result.createMeals?.length || result.updateMeals?.length || result.weeklyMenu || result.mealPrepPlan;
       setPending(hasChanges ? result : null);
@@ -254,7 +318,18 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
             </label>
             <label className="field">
               <span>Modèle</span>
-              <input className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)} placeholder={provider.model || 'nom du modèle'} />
+              {models.length ? (
+                <select className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)}>
+                  {!models.includes(model) && <option value={model}>{model}</option>}
+                  {models.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)} placeholder={provider.model || 'nom du modèle'} />
+              )}
             </label>
             <label className="field">
               <span>Clé API</span>
@@ -267,6 +342,7 @@ export default function AIAssistant({ meals, menu, members, actions, draft, onDr
               <input className="input" value={customEndpoint} onChange={(e) => save('custom_endpoint', setCustomEndpoint)(e.target.value)} placeholder="https://…/v1/chat/completions" />
             </label>
           )}
+          {modelsError && <p className="form-error">{modelsError}</p>}
           <p className="hint">
             🔒 La clé reste dans ce navigateur et n’est envoyée qu’au fournisseur choisi. N’utilisez pas cette page sur un ordinateur partagé.
           </p>
