@@ -56,7 +56,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
   if (!member) {
     return (
       <div className="page">
-        <PageHeader art="cottage-logis" title="Membres du logis" subtitle="Ajoutez les personnes pour qui vous cuisinez." />
+        <PageHeader art="famille-logis" title="Membres du logis" subtitle="Ajoutez les personnes pour qui vous cuisinez." />
         <button type="button" className="btn btn--primary" onClick={() => setSelectedId(actions.addMember())}>
           ＋ Ajouter un membre
         </button>
@@ -97,7 +97,7 @@ export default function HouseholdMembers({ members, menu, mealsById, actions, on
   return (
     <section className="hs-household-page">
       <PageHeader
-        art="cottage-logis"
+        art="famille-logis"
         title="Membres du logis"
         subtitle="Des profils complets permettent de repérer les repas à éviter et de mieux guider l’assistant."
         actions={

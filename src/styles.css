@@ -183,14 +183,14 @@ img {
 }
 
 .sidebar .brand__crest {
-  width: 96px;
-  height: 96px;
+  width: 84px;
+  height: auto;
 }
 
 .sidebar .brand__wordmark {
-  width: 176px;
+  width: 168px;
   height: auto;
-  margin-top: -0.75rem;
+  margin-top: 0.6rem;
 }
 
 .nav {
@@ -348,14 +348,18 @@ img {
     gap: 0.35rem;
   }
 
+  .topbar .brand {
+    gap: 0.55rem;
+  }
+
   .topbar .brand__crest {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: auto;
   }
 
   .topbar .brand__wordmark {
     width: auto;
-    height: 44px;
+    height: 26px;
   }
 
   .topbar .topbar__settings {
@@ -1049,6 +1053,326 @@ textarea.input {
   background: none;
   color: var(--copper);
   font-weight: 700;
+}
+
+/* =============================================================
+   Accueil (tableau de bord)
+   ============================================================= */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border-radius: var(--radius);
+  color: var(--paper);
+  background-color: var(--walnut);
+  background-image: linear-gradient(110deg, rgba(53, 42, 34, 0.96) 35%, rgba(52, 76, 60, 0.85)), var(--tex-wood);
+  background-size: auto, 520px 520px;
+  box-shadow: var(--shadow);
+}
+
+/* Branche décorative dans le coin : ornement discret, jamais derrière le texte. */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  width: min(30vw, 260px);
+  aspect-ratio: 1;
+  background: url('/hearthsmith/nordic-cottage-v2/ornaments/coin-branche.webp') no-repeat top right / contain;
+  transform: scaleX(-1);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.hero__text {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+}
+
+.hero h1 {
+  font-size: clamp(1.9rem, 3vw, 2.625rem);
+  line-height: 1.12;
+}
+
+.hero p {
+  margin: 0.4rem 0 1.25rem;
+  color: rgba(250, 246, 237, 0.82);
+}
+
+.hero__search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+.hero__search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--ink);
+}
+
+.hero__results {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0.35rem;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.hero__results button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+}
+
+.hero__results button:hover {
+  background: var(--cream);
+}
+
+.hero__result-img {
+  width: 44px;
+  height: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+}
+
+.hero__all {
+  justify-content: center;
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--mist);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tile:hover {
+  border-color: var(--sand);
+  box-shadow: var(--shadow);
+}
+
+.tile__icon {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--forest);
+  background: var(--cream);
+}
+
+.tile__text {
+  display: grid;
+  line-height: 1.2;
+}
+
+.tile__text strong {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+}
+
+.tile__text span {
+  font-weight: 600;
+}
+
+.tile__text small {
+  color: var(--ink-soft);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(150, 97, 36, 0.4);
+  border-radius: 12px;
+  background: #f6ead7;
+  color: var(--ink);
+  text-align: left;
+}
+
+.notice .icon {
+  flex: 0 0 auto;
+  color: var(--warning);
+}
+
+.notice__action {
+  margin-left: auto;
+  color: var(--clay);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 2.2fr);
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.today__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.today__slot {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clay);
+}
+
+.today__meal,
+.today__empty {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem;
+  border: 1px solid var(--mist);
+  border-radius: 10px;
+  background: var(--paper);
+  text-align: left;
+}
+
+.today__empty {
+  justify-content: center;
+  min-height: 48px;
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
+.today__img {
+  width: 52px;
+  height: 52px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+}
+
+.suggestions__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.suggestions__head h2 {
+  font-size: 1.5rem;
+}
+
+.suggestions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.9rem;
+}
+
+.topbar__logis {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1023px) {
+  .topbar__logis {
+    position: relative;
+    margin-left: auto;
+    margin-right: 0.5rem;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(243, 232, 212, 0.2);
+    border-radius: 50%;
+    background: rgba(243, 232, 212, 0.08);
+    color: var(--cream);
+  }
+
+  .topbar__logis .nav__badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    left: auto;
+  }
+
+  /* 6 onglets en bas ; le logis est accessible par la barre du haut. */
+  .nav__btn--logis {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .tile {
+    padding: 0.8rem;
+    gap: 0.6rem;
+  }
+
+  .tile__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tile__text strong {
+    font-size: 1.4rem;
+  }
+
+  .hero::after {
+    width: 120px;
+    opacity: 0.6;
+  }
+
+  .suggestions__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* =============================================================

@@ -6,6 +6,7 @@ Version en ligne : https://exod19.github.io/Hearthsmith-project/
 
 ## Fonctionnalités
 
+- **Accueil** : salutation, recherche de recettes, résumé de la semaine (recettes, repas planifiés, articles à acheter, préparation), repas du jour et suggestions.
 - **Semaine** : planifiez déjeuner, dîner, souper et collations en cliquant sur une case. Totaux kcal et protéines par jour, plusieurs semaines possibles.
 - **Recettes** : bibliothèque avec recherche par nom ou ingrédient, filtres par moment du repas, photos réduites automatiquement.
 - **Épicerie** : liste générée à partir du menu, quantités additionnées et classées par rayon, articles ajoutés à la main, export CSV et impression.
@@ -37,8 +38,8 @@ src/
   components/           un composant par onglet + ui.jsx (briques communes)
   styles.css            système visuel « Nordic Cottage » (guide de marque V2)
   components/icons.jsx  pictogrammes SVG au trait
-public/brand/           logo d'origine + versions allégées (crest.webp, mots-symboles ivoire / noyer)
-public/hearthsmith/     textures d'origine et illustrations Nordic Cottage ; public/textures/ = textures allégées
+public/brand/           logo Nordic Cottage (emblèmes, mots-symboles, compositions)
+public/hearthsmith/     textures d'origine, illustrations et ornements Nordic Cottage ; public/textures/ = textures allégées
 docs/brand/             guide de marque V2, archives et index des fichiers (docs/brand/README.md)
 ```
 

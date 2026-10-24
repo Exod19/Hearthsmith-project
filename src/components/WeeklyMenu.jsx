@@ -94,7 +94,7 @@ export default function WeeklyMenu({ menus, menu, meals, mealsById, images, acti
   return (
     <div className="page printable" data-print="menu">
       <PageHeader
-        icon="calendar"
+        art="calendrier-menu"
         title={
           renaming ? (
             <input

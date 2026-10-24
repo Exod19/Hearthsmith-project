@@ -9,6 +9,7 @@ import { usePlanner } from './state/usePlanner.js';
 import { generateGroceryList } from './utils/grocery.js';
 import { findConflicts } from './utils/nutrition.js';
 
+import Dashboard from './components/Dashboard.jsx';
 import WeeklyMenu from './components/WeeklyMenu.jsx';
 import MealLibrary from './components/MealLibrary.jsx';
 import GroceryList from './components/GroceryList.jsx';
@@ -22,11 +23,12 @@ import { useToast } from './components/ui.jsx';
 import Icon from './components/icons.jsx';
 
 const TABS = [
+  { key: 'accueil', label: 'Accueil', icon: 'home' },
   { key: 'semaine', label: 'Semaine', icon: 'calendar' },
   { key: 'recettes', label: 'Recettes', icon: 'book' },
   { key: 'epicerie', label: 'Épicerie', icon: 'basket' },
   { key: 'prep', label: 'Meal prep', icon: 'pot' },
-  { key: 'logis', label: 'Logis', icon: 'home' },
+  { key: 'logis', label: 'Logis', icon: 'users' },
   { key: 'assistant', label: 'Assistant', icon: 'sparkle' },
   { key: 'reglages', label: 'Réglages', icon: 'settings' },
 ];
@@ -37,7 +39,7 @@ const BASE = import.meta.env.BASE_URL;
 // L'onglet courant vit dans l'adresse (#/epicerie) : on peut recharger ou partager le lien.
 const tabFromHash = () => {
   const key = window.location.hash.replace(/^#\/?/, '');
-  return TABS.some((t) => t.key === key) ? key : 'semaine';
+  return TABS.some((t) => t.key === key) ? key : 'accueil';
 };
 
 export default function App() {
@@ -49,6 +51,7 @@ export default function App() {
   const [viewMealId, setViewMealId] = useState(null);
   const [editMealId, setEditMealId] = useState(null);
   const [aiDraft, setAiDraft] = useState('');
+  const [libraryQuery, setLibraryQuery] = useState('');
 
   useEffect(() => {
     const onHash = () => setTab(tabFromHash());
@@ -101,9 +104,9 @@ export default function App() {
       </a>
 
       <aside className="sidebar no-print">
-        <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="HearthSmith, accueil">
-          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="96" height="96" />
-          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="600" height="200" />
+        <button type="button" className="brand" onClick={() => goTo('accueil')} aria-label="HearthSmith, accueil">
+          <img src={`${BASE}brand/hearthsmith-embleme-ivoire.webp`} alt="" className="brand__crest" width="96" height="94" />
+          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="900" height="272" />
         </button>
 
         <nav className="nav" aria-label="Navigation principale">
@@ -111,7 +114,7 @@ export default function App() {
             <a
               key={t.key}
               href={`#/${t.key}`}
-              className={`nav__btn ${tab === t.key ? 'is-active' : ''} ${t.key === 'reglages' ? 'nav__btn--end' : ''}`}
+              className={`nav__btn nav__btn--${t.key} ${tab === t.key ? 'is-active' : ''} ${t.key === 'reglages' ? 'nav__btn--end' : ''}`}
               aria-current={tab === t.key ? 'page' : undefined}
               onClick={(e) => {
                 e.preventDefault();
@@ -146,9 +149,13 @@ export default function App() {
 
       {/* Barre du haut : mobile et tablette seulement. */}
       <header className="topbar no-print">
-        <button type="button" className="brand" onClick={() => goTo('semaine')} aria-label="HearthSmith, accueil">
-          <img src={`${BASE}brand/crest.webp`} alt="" className="brand__crest" width="48" height="48" />
-          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="600" height="200" />
+        <button type="button" className="brand" onClick={() => goTo('accueil')} aria-label="HearthSmith, accueil">
+          <img src={`${BASE}brand/hearthsmith-embleme-ivoire.webp`} alt="" className="brand__crest" width="44" height="43" />
+          <img src={`${BASE}brand/hearthsmith-wordmark-ivoire.webp`} alt="HearthSmith" className="brand__wordmark" width="900" height="272" />
+        </button>
+        <button type="button" className="topbar__logis" onClick={() => goTo('logis')} aria-label={`Membres du logis${conflictCount ? `, ${conflictCount} alerte(s)` : ''}`}>
+          <Icon name="users" size={22} />
+          {conflictCount > 0 && <span className="nav__badge">{conflictCount}</span>}
         </button>
         <button type="button" className="icon-btn topbar__settings" onClick={() => goTo('reglages')} aria-label="Réglages">
           <Icon name="settings" />
@@ -171,7 +178,27 @@ export default function App() {
               onGoTo={goTo}
             />
           )}
-          {tab === 'recettes' && <MealLibrary meals={meals} images={images} menu={menu} onEdit={setEditMealId} onCreate={createMeal} onGoTo={goTo} />}
+          {tab === 'accueil' && (
+            <Dashboard
+              profileName={state.profileName}
+              meals={meals}
+              menu={menu}
+              mealsById={mealsById}
+              images={images}
+              groceryList={groceryList}
+              checks={groceryChecks[menu.id] || {}}
+              conflictCount={conflictCount}
+              onOpenMeal={setViewMealId}
+              onGoTo={goTo}
+              onSearch={(q) => {
+                setLibraryQuery(q);
+                goTo('recettes');
+              }}
+            />
+          )}
+          {tab === 'recettes' && (
+            <MealLibrary meals={meals} images={images} menu={menu} initialQuery={libraryQuery} onEdit={setEditMealId} onCreate={createMeal} onGoTo={goTo} />
+          )}
           {tab === 'epicerie' && (
             <GroceryList menu={menu} groceryList={groceryList} checks={groceryChecks[menu.id] || {}} prices={state.prices} actions={actions} onGoTo={goTo} />
           )}

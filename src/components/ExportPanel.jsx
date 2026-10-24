@@ -43,6 +43,12 @@ export default function ExportPanel({ state, actions }) {
       <PageHeader icon="settings" title="Réglages" subtitle="Vos données restent dans ce navigateur. Faites une sauvegarde pour les transférer sur un autre appareil." />
 
       <div className="settings-grid">
+        <Card title="Votre profil" icon="users">
+          <label className="field">
+            <span>Votre prénom</span>
+            <input className="input" value={state.profileName || ''} onChange={(e) => actions.setProfileName(e.target.value)} placeholder="Pour l’accueil : « Bonjour, … ! »" autoComplete="given-name" />
+          </label>
+        </Card>
         <AISettings />
         <Card title="Sauvegarde" icon="download">
           <p>Téléchargez un fichier avec toutes vos recettes, semaines, profils et photos, ou restaurez-en un.</p>

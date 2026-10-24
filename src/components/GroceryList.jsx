@@ -39,7 +39,7 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
   return (
     <div className="page printable">
       <PageHeader
-        icon="basket"
+        art="panier-epicerie"
         title="Épicerie"
         subtitle={`Générée automatiquement à partir de « ${menu.name} ». Les quantités des recettes sont additionnées.`}
         actions={
@@ -77,7 +77,7 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
         <PriceComparison groceryList={groceryList} checks={checks} prices={prices} actions={actions} />
       ) : total === 0 && !(menu.extraGroceries || []).length ? (
         <EmptyState
-          art="livre-de-recettes"
+          art="panier-epicerie"
           title="Rien à acheter pour l’instant"
           action={
             <button type="button" className="btn btn--primary" onClick={() => onGoTo('semaine')}>

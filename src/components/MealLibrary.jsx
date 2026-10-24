@@ -17,8 +17,8 @@ const SORTS = {
   time: { label: 'Rapidité', fn: (a, b) => (Number(a.prepTime) || 999) - (Number(b.prepTime) || 999) },
 };
 
-export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onGoTo }) {
-  const [query, setQuery] = useState('');
+export default function MealLibrary({ meals, images, menu, initialQuery = '', onEdit, onCreate, onGoTo }) {
+  const [query, setQuery] = useState(initialQuery);
   const [type, setType] = useState('');
   const [sort, setSort] = useState('name');
 
@@ -105,7 +105,7 @@ export default function MealLibrary({ meals, images, menu, onEdit, onCreate, onG
               ))}
             </div>
           ) : (
-            <EmptyState icon="search" title="Aucun résultat">
+            <EmptyState art="loupe-recherche" title="Aucun résultat">
               Essayez un autre mot ou retirez le filtre.
             </EmptyState>
           )}

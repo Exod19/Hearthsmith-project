@@ -58,7 +58,7 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
   return (
     <div className="page printable">
       <PageHeader
-        icon="pot"
+        art="marmite-meal-prep"
         title="Meal prep"
         subtitle={`Ce qu’il faut cuisiner pour « ${menu.name} », en commençant par ce qui revient le plus souvent.`}
         actions={
@@ -70,7 +70,7 @@ export default function MealPrep({ menu, mealsById, images, actions, onOpenMeal,
 
       {!allEntries.length ? (
         <EmptyState
-          icon="pot"
+          art="marmite-meal-prep"
           title="Aucun repas à préparer"
           action={
             <button type="button" className="btn btn--primary" onClick={() => onGoTo('semaine')}>

@@ -93,6 +93,7 @@ export function normalizeState(raw) {
     groceryChecks: isObject(raw.groceryChecks) ? raw.groceryChecks : isObject(raw.checkedItems) ? raw.checkedItems : {},
     householdMembers: membersRaw.map(normalizeMember).filter(Boolean),
     prices: { ...createPriceSettings(), ...(isObject(raw.prices) ? raw.prices : {}) },
+    profileName: typeof raw.profileName === 'string' ? raw.profileName : '',
   };
 }
 
