@@ -71,14 +71,23 @@ const STORE = {
   },
 };
 
+/** Extrait l'objet JSON d'une réponse (blocs ```json, réflexion <think>, texte autour). */
 function parseJson(text) {
+  const clean = text
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/```(?:json)?/gi, '')
+    .trim();
   try {
-    return JSON.parse(text);
+    return JSON.parse(clean);
   } catch {
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('La réponse n’est pas du JSON.');
-    return JSON.parse(text.slice(start, end + 1));
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if (start === -1 || end <= start) return null;
+    try {
+      return JSON.parse(clean.slice(start, end + 1));
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -131,30 +140,59 @@ async function listModels(endpoint, apiKey) {
 
 const pickModel = (ids) => PREFERRED_MODELS.map((re) => ids.find((id) => re.test(id))).find(Boolean) || ids[0];
 
-async function callAI({ provider, endpoint, model, apiKey, request, context, history, jsonMode = true }) {
-  const user = JSON.stringify({ demande: request, contexte: context, historique: history }, null, 1);
+const JSON_REMINDER = 'Ta réponse précédente n’était pas un objet JSON valide. Renvoie uniquement l’objet JSON demandé, complet, sans texte autour.';
+
+async function requestAI({ provider, endpoint, model, apiKey, messages, jsonMode }) {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
   const body =
     provider.mode === 'responses'
-      ? { model, input: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] }
-      : { model, temperature: 0.3, ...(jsonMode && { response_format: { type: 'json_object' } }), messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] };
+      ? { model, input: messages, max_output_tokens: 8000 }
+      : { model, temperature: 0.3, max_tokens: 8000, ...(jsonMode && { response_format: { type: 'json_object' } }), messages };
 
   const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
   if (!response.ok) {
     const details = await response.json().catch(() => null);
-    const error = new Error(
-      response.status === 401 ? 'Clé API refusée.' : details?.error?.message || `Erreur ${response.status}`
-    );
+    const error = new Error(response.status === 401 ? 'Clé API refusée.' : details?.error?.message || `Erreur ${response.status}`);
     error.code = details?.error?.code;
     throw error;
   }
   const data = await response.json();
+  const choice = data.choices?.[0];
   const text =
     provider.mode === 'responses'
       ? data.output_text || data.output?.flatMap((o) => o.content || []).map((c) => c.text || '').join('') || ''
-      : data.choices?.[0]?.message?.content || '';
-  if (!text) throw new Error('L’IA n’a rien renvoyé.');
-  return parseJson(text);
+      : choice?.message?.content || '';
+  const truncated = choice?.finish_reason === 'length' || data.status === 'incomplete';
+  return { text, truncated };
+}
+
+/**
+ * Appelle l'IA et renvoie toujours un objet de résultat :
+ * JSON valide → proposition applicable ; sinon un second essai,
+ * puis, au pire, le texte brut affiché comme simple réponse.
+ */
+async function callAI({ provider, endpoint, model, apiKey, request, context, history, jsonMode = true }) {
+  const user = JSON.stringify({ demande: request, contexte: context, historique: history }, null, 1);
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: user },
+  ];
+  const opts = { provider, endpoint, model, apiKey, jsonMode };
+
+  let { text, truncated } = await requestAI({ ...opts, messages });
+  let result = text && parseJson(text);
+  if (result) return result;
+
+  if (truncated) throw new Error('La réponse a été coupée parce qu’elle était trop longue. Demandez moins d’éléments à la fois (par exemple 3 recettes).');
+
+  // Second essai : on rappelle le format attendu.
+  ({ text, truncated } = await requestAI({ ...opts, messages: [...messages, { role: 'assistant', content: text || '…' }, { role: 'user', content: JSON_REMINDER }] }));
+  result = text && parseJson(text);
+  if (result) return result;
+  if (!text) throw new Error('L’IA n’a rien renvoyé. Essayez un autre modèle dans la configuration.');
+
+  // Dernier recours : afficher la réponse telle quelle, sans changement applicable.
+  return { message: `${text.trim().slice(0, 3000)}\n\n(Réponse libre : rien à appliquer automatiquement. Essayez un autre modèle pour obtenir une proposition applicable.)` };
 }
 
 export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo }) {
