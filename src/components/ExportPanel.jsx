@@ -1,123 +1,97 @@
-import React from 'react';
+// =============================================================
+//  ExportPanel.jsx — Réglages : sauvegarde, import, remise à zéro
+// =============================================================
 
-export default function ExportPanel({
-  onPrintMenu,
-  onPrintGrocery,
-  onPrintPrep,
-  onExportGrocery,
-  onSaveBackup,
-  onLoadBackup,
-  onReset,
-}) {
+import { useRef } from 'react';
+import { exportBackup } from '../utils/files.js';
+import { readBackup, storageUsage } from '../utils/storage.js';
+import { Card, PageHeader, Progress, useToast } from './ui.jsx';
+
+// La plupart des navigateurs accordent environ 5 Mo par site.
+const QUOTA = 5 * 1024 * 1024;
+
+export default function ExportPanel({ state, actions }) {
+  const notify = useToast();
+  const fileRef = useRef(null);
+  const used = storageUsage();
+  const sampleCount = state.meals.filter((m) => m.sample).length;
+
+  async function handleImport(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      const next = await readBackup(file);
+      if (!window.confirm(`Remplacer vos données par cette sauvegarde (${next.meals.length} recettes, ${next.menus.length} semaines) ?`)) return;
+      actions.replaceState(next);
+      notify('Sauvegarde restaurée');
+    } catch (error) {
+      notify(error.message || 'Fichier illisible', { tone: 'error' });
+    }
+  }
+
+  function handleReset() {
+    if (!window.confirm('Effacer toutes les recettes, semaines et photos ? Téléchargez une sauvegarde avant, au besoin.')) return;
+    actions.resetAll();
+    notify('Application remise à zéro');
+  }
+
   return (
-    <section className="panel">
-      <div className="panel__head">
-        <div>
-          <h2 className="panel__title">Sauvegarde et export</h2>
-          <p className="panel__sub">
-            Imprime les sections importantes, exporte la liste d'épicerie ou
-            sauvegarde tes données.
-          </p>
-        </div>
-      </div>
+    <div className="page">
+      <PageHeader icon="⚙" title="Réglages" subtitle="Vos données restent dans ce navigateur. Faites une sauvegarde pour les transférer sur un autre appareil." />
 
-      <div className="export-grid">
-        <div className="export-card">
-          <h3>Impression</h3>
-          <p>
-            Imprime le menu, la liste d'épicerie ou la préparation de la
-            semaine.
-          </p>
-
-          <div className="export-actions">
+      <div className="settings-grid">
+        <Card title="Sauvegarde" icon="💾">
+          <p>Téléchargez un fichier avec toutes vos recettes, semaines, profils et photos, ou restaurez-en un.</p>
+          <div className="toolbar">
             <button
-              className="btn btn--ghost"
               type="button"
-              onClick={onPrintMenu}
-            >
-              Imprimer le menu
-            </button>
-
-            <button
-              className="btn btn--ghost"
-              type="button"
-              onClick={onPrintGrocery}
-            >
-              Imprimer l'épicerie
-            </button>
-
-            <button
-              className="btn btn--ghost"
-              type="button"
-              onClick={onPrintPrep}
-            >
-              Imprimer le meal prep
-            </button>
-          </div>
-        </div>
-
-        <div className="export-card">
-          <h3>Liste d'épicerie</h3>
-          <p>
-            Télécharge la liste d'épicerie en format CSV pour l'ouvrir dans
-            Excel ou Google Sheets.
-          </p>
-
-          <div className="export-actions">
-            <button
               className="btn btn--primary"
-              type="button"
-              onClick={onExportGrocery}
+              onClick={() => {
+                exportBackup(state);
+                notify('Sauvegarde téléchargée');
+              }}
             >
-              Exporter CSV
+              ⇩ Télécharger une sauvegarde
             </button>
-          </div>
-        </div>
-
-        <div className="export-card">
-          <h3>Sauvegarde</h3>
-          <p>Sauvegarde ou restaure les données du planificateur.</p>
-
-          <div className="export-actions">
-            <button
-              className="btn btn--ghost"
-              type="button"
-              onClick={onSaveBackup}
-            >
-              Télécharger backup
+            <button type="button" className="btn btn--parchment" onClick={() => fileRef.current?.click()}>
+              ⇧ Restaurer un fichier
             </button>
-
-            <label className="btn btn--ghost">
-              Importer backup
-              <input
-                type="file"
-                accept="application/json"
-                style={{ display: 'none' }}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    onLoadBackup?.(file);
-                  }
-                }}
-              />
-            </label>
+            <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={handleImport} />
           </div>
-        </div>
+        </Card>
 
-        <div className="export-card export-card--danger">
-          <h3>Réinitialisation</h3>
+        <Card title="Espace utilisé" icon="📦">
           <p>
-            Remettre l'application à zéro. À utiliser seulement si tu veux
-            effacer les données actuelles.
+            {(used / 1024 / 1024).toFixed(2).replace('.', ',')} Mo sur environ 5 Mo · {Object.keys(state.images).length} photo(s)
           </p>
+          <Progress value={used} max={QUOTA} label="Espace de stockage utilisé" />
+          <p className="hint">Les photos prennent le plus de place. Elles sont réduites automatiquement à l’import.</p>
+        </Card>
 
-          <div className="export-actions">
-            <button className="btn btn--danger" type="button" onClick={onReset}>
-              Réinitialiser
+        {sampleCount > 0 && (
+          <Card title="Recettes d’exemple" icon="📜">
+            <p>{sampleCount} recettes d’exemple ont été ajoutées pour vous aider à démarrer.</p>
+            <button
+              type="button"
+              className="btn btn--parchment"
+              onClick={() => {
+                actions.removeSampleMeals();
+                notify('Recettes d’exemple retirées');
+              }}
+            >
+              Retirer les exemples
             </button>
-          </div>
-        </div>
+          </Card>
+        )}
+
+        <Card title="Remise à zéro" icon="⚠" className="card--danger">
+          <p>Efface tout le contenu de l’application dans ce navigateur. Les profils du logis par défaut sont recréés.</p>
+          <button type="button" className="btn btn--danger" onClick={handleReset}>
+            Tout effacer
+          </button>
+        </Card>
       </div>
-    </section>
+    </div>
   );
 }

@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Hearthsmith
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Planificateur de repas familial : menu de la semaine, recettes, liste d'épicerie, meal prep, profils du logis et assistant IA.
 
-Currently, two official plugins are available:
+Version en ligne : https://exod19.github.io/Hearthsmith-project/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Fonctionnalités
 
-## React Compiler
+- **Semaine** : planifiez déjeuner, dîner, souper et collations en cliquant sur une case. Totaux kcal et protéines par jour, plusieurs semaines possibles.
+- **Recettes** : bibliothèque avec recherche par nom ou ingrédient, filtres par moment du repas, photos réduites automatiquement.
+- **Épicerie** : liste générée à partir du menu, quantités additionnées et classées par rayon, articles ajoutés à la main, export CSV et impression.
+- **Meal prep** : recettes à cuisiner en lot ou au jour le jour, cases à cocher, notes par jour.
+- **Logis** : profils des membres (restrictions, aversions, objectifs) et alertes quand un repas du menu entre en conflit avec un profil.
+- **Assistant** : crée des recettes, remplit le menu ou propose un plan de meal prep (Groq, OpenAI ou API compatible ; la clé reste dans le navigateur).
+- **Réglages** : sauvegarde et restauration en JSON, espace utilisé, remise à zéro.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Les données sont enregistrées dans le `localStorage` du navigateur.
 
-## Expanding the Oxlint configuration
+## Développement
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # serveur local
+npm run build    # vérification TypeScript + build de production
+npm run lint     # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Structure
+
+```
+src/
+  App.jsx               coquille : en-tête, navigation (#/onglet), fenêtres partagées
+  state/usePlanner.js   état global, actions et sauvegarde automatique
+  data/defaults.js      constantes, profils et recettes d'exemple
+  utils/                ingrédients, épicerie, nutrition/alertes, stockage, fichiers
+  components/           un composant par onglet + ui.jsx (briques communes)
+  styles.css            système visuel (bois, parchemin, cuivre)
+public/                 images optimisées servies par le site
+design/                 fichiers sources haute résolution (non publiés)
+```
+
+## Déploiement
+
+Chaque push sur `main` déclenche `.github/workflows/deploy.yml`, qui construit l'app et la publie sur GitHub Pages.
