@@ -1,522 +1,393 @@
-import React, { useMemo, useState } from 'react';
+// =============================================================
+//  AIAssistant.jsx — Assistant IA (clé API fournie par l'usager)
+// -------------------------------------------------------------
+//  L'IA reçoit les recettes, le menu actif et les profils du
+//  logis, puis renvoie un JSON que l'on applique sur demande.
+// =============================================================
 
-const AI_SYSTEM_PROMPT = `
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { DAYS, MEAL_TYPES } from '../data/defaults.js';
+import { Card, PageHeader, useToast } from './ui.jsx';
+
+const SYSTEM_PROMPT = `
 Tu es l'assistant nutritionnel et organisationnel d'une famille québécoise.
 
-Tu aides à:
-- créer des fiches repas structurées;
-- compléter les champs vides des fiches existantes;
-- estimer les macros quand elles sont absentes;
-- générer des menus hebdomadaires à partir des fiches disponibles;
-- produire un plan de meal prep réaliste;
-- proposer des ajustements selon les contraintes familiales.
+Tu aides à créer des fiches repas, compléter les fiches existantes (macros manquantes),
+générer des menus hebdomadaires, produire un plan de meal prep et adapter les repas
+aux profils des membres du logis (restrictions, aversions, objectifs).
 
-Règles importantes:
-- Réponds toujours en français québécois.
+Règles :
+- Réponds en français québécois.
 - Ne donne pas d'avis médical.
-- Si tu estimes des macros, indique dans notes que ce sont des estimations.
-- Respecte les mealTypes disponibles: dejeuner, diner, souper, collation.
-- Respecte les membres disponibles: samuel, anne-marie, jeanne, eleonore.
-- Pour les menus, utilise les ids des fiches repas existantes quand c'est possible.
-- Si tu crées de nouvelles fiches repas, remplis tous les champs utiles.
-- Ne mets jamais d'image réelle. Laisse image vide.
-- Retourne toujours un JSON valide, sans markdown, sans texte avant ou après.
+- Respecte les restrictions et aversions des membres actifs.
+- Si tu estimes des macros, indique-le dans « notes ».
+- mealTypes possibles : dejeuner, diner, souper, collation.
+- assignedTo : ids des membres (laisser vide si pour tout le monde).
+- ingredients : tableau de chaînes, quantité en premier (ex. « 200 g poulet »).
+- instructions : une étape par ligne.
+- Pour un menu, utilise les ids des fiches existantes ou de celles que tu crées
+  (donne alors un id unique aux nouvelles fiches, ex. « ai_poulet_citron »).
+- Jours du menu : lundi, mardi, mercredi, jeudi, vendredi, samedi, dimanche.
+- Retourne uniquement du JSON valide, sans markdown.
 
-Format de réponse obligatoire:
+Format de réponse :
 {
-  "message": "Résumé humain de ce que tu proposes.",
-  "createMeals": [],
-  "updateMeals": [],
-  "weeklyMenu": null,
+  "message": "Résumé de ce que tu proposes.",
+  "createMeals": [{ "id": "", "name": "", "mealTypes": [], "macros": { "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0 }, "servings": 4, "prepTime": 30, "assignedTo": [], "ingredients": [], "instructions": "", "notes": "" }],
+  "updateMeals": [{ "id": "id existant", "...champs à modifier": "" }],
+  "weeklyMenu": null ou { "name": "", "days": { "lundi": { "dejeuner": "id", "diner": "id", "souper": "id", "collations": ["id"] } } },
   "mealPrepPlan": "",
   "questions": []
 }
-
-Structure d'une fiche repas:
-{
-  "name": "",
-  "image": "",
-  "mealTypes": [],
-  "macros": {
-    "calories": "",
-    "protein": "",
-    "carbs": "",
-    "fat": "",
-    "fiber": ""
-  },
-  "assignedTo": [],
-  "ingredients": [],
-  "instructions": "",
-  "notes": ""
-}
 `;
 
-const AI_PROVIDERS = {
-  groq: {
-    label: 'Groq',
-    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-    defaultModel: 'llama-3.3-70b-versatile',
-    mode: 'chatCompletions',
+const PROVIDERS = {
+  groq: { label: 'Groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', model: 'llama-3.3-70b-versatile', mode: 'chat', keyHint: 'gsk_…' },
+  openai: { label: 'OpenAI', endpoint: 'https://api.openai.com/v1/responses', model: 'gpt-5-mini', mode: 'responses', keyHint: 'sk-…' },
+  custom: { label: 'Compatible OpenAI', endpoint: '', model: '', mode: 'chat', keyHint: 'clé API' },
+};
+
+const EXAMPLES = [
+  'Crée 5 recettes simples et familiales, riches en protéines.',
+  'Complète les macros manquantes de mes recettes.',
+  'Produis le menu de la semaine avec mes recettes.',
+  'Fais un plan de meal prep en 2 blocs pour cette semaine.',
+];
+
+const STORE = {
+  get: (k, fallback = '') => {
+    try {
+      return localStorage.getItem(`hearthsmith_ai_${k}`) ?? fallback;
+    } catch {
+      return fallback;
+    }
   },
-  openai: {
-    label: 'OpenAI',
-    endpoint: 'https://api.openai.com/v1/responses',
-    defaultModel: 'gpt-5-mini',
-    mode: 'responses',
-  },
-  custom: {
-    label: 'Custom compatible OpenAI',
-    endpoint: '',
-    defaultModel: '',
-    mode: 'chatCompletions',
+  set: (k, v) => {
+    try {
+      localStorage.setItem(`hearthsmith_ai_${k}`, v);
+    } catch {
+      /* stockage indisponible : la valeur reste en mémoire */
+    }
   },
 };
 
-const DEFAULT_EXAMPLES = [
-  'Crée-moi 5 fiches repas simples, familiales, riches en protéines.',
-  'Complète les macros manquantes de mes fiches repas existantes.',
-  'Produis mon menu hebdomadaire à partir des fiches disponibles.',
-  'Fais-moi un plan meal prep pour préparer les repas de la semaine en 2 blocs.',
-];
-
-function safeJsonParse(text) {
+function parseJson(text) {
   try {
     return JSON.parse(text);
-  } catch (error) {
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-
-    if (firstBrace === -1 || lastBrace === -1) {
-      throw error;
-    }
-
-    const possibleJson = text.slice(firstBrace, lastBrace + 1);
-    return JSON.parse(possibleJson);
+  } catch {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('La réponse n’est pas du JSON.');
+    return JSON.parse(text.slice(start, end + 1));
   }
 }
 
-function buildCompactContext({
-  meals,
-  menus,
-  activeMenu,
-  mealTypes,
-  familyMembers,
-}) {
+function buildContext({ meals, menu, members }) {
   return {
-    mealTypes,
-    familyMembers,
-    activeMenu,
-    menus: menus.map((menu) => ({
-      id: menu.id,
-      name: menu.name,
-      description: menu.description,
-      days: menu.days,
-    })),
-    meals: meals.map((meal) => ({
-      id: meal.id,
-      name: meal.name,
-      mealTypes: meal.mealTypes || [],
-      macros: meal.macros || {},
-      assignedTo: meal.assignedTo || [],
-      ingredients: meal.ingredients || [],
-      instructions: meal.instructions || '',
-      notes: meal.notes || '',
+    jours: DAYS.map((d) => d.id),
+    typesDeRepas: MEAL_TYPES.map((t) => t.id),
+    membres: members
+      .filter((m) => m.activeProfile)
+      .map((m) => ({
+        id: m.id,
+        nom: m.name,
+        role: m.role,
+        age: m.age,
+        objectif: m.objective,
+        restrictions: m.restrictions,
+        conditions: m.conditions,
+        aime: m.likes,
+        evite: m.dislikes,
+        cibles: { calories: m.calories, proteines: m.protein, glucides: m.carbs, lipides: m.fat, fibres: m.fiber },
+      })),
+    menuActif: { id: menu.id, nom: menu.name, jours: menu.days },
+    recettes: meals.map((m) => ({
+      id: m.id,
+      name: m.name,
+      mealTypes: m.mealTypes,
+      macros: m.macros,
+      assignedTo: m.assignedTo,
+      ingredients: m.ingredients,
     })),
   };
 }
 
-export default function AIAssistant({
-  meals = [],
-  menus = [],
-  activeMenu = null,
-  mealTypes = [],
-  familyMembers = [],
-  onApplyResult,
-}) {
-  const [provider, setProvider] = useState(
-    () => localStorage.getItem('hearthsmith_ai_provider') || 'groq'
-  );
+async function callAI({ provider, endpoint, model, apiKey, request, context, history }) {
+  const user = JSON.stringify({ demande: request, contexte: context, historique: history }, null, 1);
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
+  const body =
+    provider.mode === 'responses'
+      ? { model, input: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] }
+      : { model, temperature: 0.3, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: user }] };
 
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem('hearthsmith_ai_api_key') || ''
-  );
+  const response = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+  if (!response.ok) {
+    const details = await response.text().catch(() => '');
+    throw new Error(response.status === 401 ? 'Clé API refusée.' : `Erreur ${response.status} ${details.slice(0, 160)}`);
+  }
+  const data = await response.json();
+  const text =
+    provider.mode === 'responses'
+      ? data.output_text || data.output?.flatMap((o) => o.content || []).map((c) => c.text || '').join('') || ''
+      : data.choices?.[0]?.message?.content || '';
+  if (!text) throw new Error('L’IA n’a rien renvoyé.');
+  return parseJson(text);
+}
 
-  const [model, setModel] = useState(
-    () =>
-      localStorage.getItem('hearthsmith_ai_model') ||
-      AI_PROVIDERS.groq.defaultModel
-  );
-
-  const [customEndpoint, setCustomEndpoint] = useState(
-    () => localStorage.getItem('hearthsmith_ai_custom_endpoint') || ''
-  );
-
+export default function AIAssistant({ meals, menu, members, actions, draft, onDraftUsed, onGoTo }) {
+  const notify = useToast();
+  const [providerId, setProviderId] = useState(() => STORE.get('provider', 'groq'));
+  const [apiKey, setApiKey] = useState(() => STORE.get('api_key'));
+  const [model, setModel] = useState(() => STORE.get('model', PROVIDERS.groq.model));
+  const [customEndpoint, setCustomEndpoint] = useState(() => STORE.get('custom_endpoint'));
+  const [showSettings, setShowSettings] = useState(() => !STORE.get('api_key'));
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
-  const [lastResult, setLastResult] = useState(null);
+  const [pending, setPending] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const promptRef = useRef(null);
+  const logRef = useRef(null);
 
-  const activeProvider = AI_PROVIDERS[provider] || AI_PROVIDERS.groq;
+  const provider = PROVIDERS[providerId] || PROVIDERS.groq;
+  const endpoint = providerId === 'custom' ? customEndpoint.trim() : provider.endpoint;
+  const context = useMemo(() => buildContext({ meals, menu, members }), [meals, menu, members]);
 
-  const activeEndpoint =
-    provider === 'custom' ? customEndpoint.trim() : activeProvider.endpoint;
+  // Demande préparée depuis un autre onglet (ex. Membres du logis).
+  useEffect(() => {
+    if (!draft) return;
+    setPrompt(draft);
+    onDraftUsed();
+    promptRef.current?.focus();
+  }, [draft, onDraftUsed]);
 
-  const compactContext = useMemo(
-    () =>
-      buildCompactContext({
-        meals,
-        menus,
-        activeMenu,
-        mealTypes,
-        familyMembers,
-      }),
-    [meals, menus, activeMenu, mealTypes, familyMembers]
-  );
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, busy]);
 
-  function handleProviderChange(nextProvider) {
-    const nextConfig = AI_PROVIDERS[nextProvider] || AI_PROVIDERS.groq;
+  const save = (key, setter) => (value) => {
+    setter(value);
+    STORE.set(key, value);
+  };
 
-    setProvider(nextProvider);
-    setModel(nextConfig.defaultModel);
-
-    localStorage.setItem('hearthsmith_ai_provider', nextProvider);
-    localStorage.setItem('hearthsmith_ai_model', nextConfig.defaultModel);
-  }
-
-  function handleSaveApiKey(value) {
-    setApiKey(value);
-    localStorage.setItem('hearthsmith_ai_api_key', value);
-  }
-
-  function handleSaveModel(value) {
-    setModel(value);
-    localStorage.setItem('hearthsmith_ai_model', value);
-  }
-
-  function handleSaveCustomEndpoint(value) {
-    setCustomEndpoint(value);
-    localStorage.setItem('hearthsmith_ai_custom_endpoint', value);
-  }
-
-  async function callAI(userPrompt) {
-    if (!activeEndpoint) {
-      throw new Error('Aucun endpoint AI configuré.');
-    }
-
-    const payload = {
-      demande: userPrompt,
-      contexteActuel: compactContext,
-      historiqueConversation: messages.slice(-8),
-    };
-
-    if (activeProvider.mode === 'responses') {
-      const response = await fetch(activeEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          input: [
-            {
-              role: 'system',
-              content: AI_SYSTEM_PROMPT,
-            },
-            {
-              role: 'user',
-              content: JSON.stringify(payload, null, 2),
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        const details = await response.text();
-        throw new Error(details || 'Erreur lors de l’appel AI.');
-      }
-
-      const data = await response.json();
-
-      const text =
-        data.output_text ||
-        data.output
-          ?.flatMap((item) => item.content || [])
-          ?.map((content) => content.text || '')
-          ?.join('') ||
-        '';
-
-      if (!text) {
-        throw new Error("L'AI n'a pas retourné de texte.");
-      }
-
-      return safeJsonParse(text);
-    }
-
-    const response = await fetch(activeEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.3,
-        messages: [
-          {
-            role: 'system',
-            content: AI_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: JSON.stringify(payload, null, 2),
-          },
-        ],
-        response_format: {
-          type: 'json_object',
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const details = await response.text();
-      throw new Error(details || 'Erreur lors de l’appel AI.');
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || '';
-
-    if (!text) {
-      throw new Error("L'AI n'a pas retourné de texte.");
-    }
-
-    return safeJsonParse(text);
+  function changeProvider(id) {
+    setProviderId(id);
+    STORE.set('provider', id);
+    save('model', setModel)(PROVIDERS[id].model);
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
-    if (!apiKey.trim()) {
-      setError('Ajoute ta clé API avant de lancer une demande.');
+    const request = prompt.trim();
+    if (!request) return;
+    if (!apiKey.trim() || !model.trim() || !endpoint) {
+      setShowSettings(true);
+      setError('Configurez le fournisseur, le modèle et la clé API avant d’envoyer une demande.');
       return;
     }
-
-    if (!model.trim()) {
-      setError('Ajoute un modèle AI avant de lancer une demande.');
-      return;
-    }
-
-    if (!activeEndpoint) {
-      setError('Ajoute un endpoint AI valide avant de lancer une demande.');
-      return;
-    }
-
-    if (!prompt.trim()) return;
-
-    const userPrompt = prompt.trim();
-
     setBusy(true);
     setError('');
+    setPending(null);
+    setMessages((m) => [...m, { role: 'user', content: request }]);
     setPrompt('');
-    setLastResult(null);
-
     try {
-      const result = await callAI(userPrompt);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-        {
-          role: 'assistant',
-          content: result.message || 'Résultat généré.',
-          result,
-        },
-      ]);
-
-      setLastResult(result);
+      const result = await callAI({
+        provider,
+        endpoint,
+        model,
+        apiKey,
+        request,
+        context,
+        history: messages.slice(-6).map(({ role, content }) => ({ role, content })),
+      });
+      setMessages((m) => [...m, { role: 'assistant', content: result.message || 'Proposition prête.', questions: result.questions }]);
+      const hasChanges = result.createMeals?.length || result.updateMeals?.length || result.weeklyMenu || result.mealPrepPlan;
+      setPending(hasChanges ? result : null);
     } catch (err) {
       console.error(err);
-      setError(
-        "La demande AI a échoué. Vérifie ta clé API, le modèle, le fournisseur ou le format de réponse."
-      );
+      setError(`La demande a échoué : ${err.message}`);
+      setMessages((m) => m.slice(0, -1));
+      setPrompt(request);
     } finally {
       setBusy(false);
     }
   }
 
-  function handleApplyLastResult() {
-    if (!lastResult) return;
-
-    onApplyResult?.(lastResult);
-    setLastResult(null);
+  function applyPending() {
+    actions.applyAIResult(pending);
+    const parts = [];
+    if (pending.createMeals?.length) parts.push(`${pending.createMeals.length} recette(s) ajoutée(s)`);
+    if (pending.updateMeals?.length) parts.push(`${pending.updateMeals.length} recette(s) mise(s) à jour`);
+    if (pending.weeklyMenu) parts.push('menu de la semaine rempli');
+    if (pending.mealPrepPlan) parts.push('plan de meal prep ajouté');
+    notify(parts.join(', ') || 'Changements appliqués');
+    setPending(null);
   }
 
+  const configured = Boolean(apiKey && model && endpoint);
+
   return (
-    <section className="ai-assistant">
-      <div className="ai-assistant__header">
-        <div>
-          <h2>Assistant AI</h2>
-          <p>
-            Demande à l’AI de créer des fiches repas, compléter les macros,
-            générer un menu hebdomadaire ou préparer ton plan meal prep.
-          </p>
-        </div>
-      </div>
-
-      <div className="ai-assistant__settings">
-        <label>
-          Fournisseur AI
-          <select
-            value={provider}
-            onChange={(event) => handleProviderChange(event.target.value)}
-          >
-            {Object.entries(AI_PROVIDERS).map(([key, config]) => (
-              <option key={key} value={key}>
-                {config.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {provider === 'custom' && (
-          <label>
-            Endpoint compatible OpenAI
-            <input
-              type="text"
-              value={customEndpoint}
-              onChange={(event) =>
-                handleSaveCustomEndpoint(event.target.value)
-              }
-              placeholder="https://api.exemple.com/openai/v1/chat/completions"
-            />
-          </label>
-        )}
-
-        <label>
-          Modèle
-          <input
-            type="text"
-            value={model}
-            onChange={(event) => handleSaveModel(event.target.value)}
-            placeholder={activeProvider.defaultModel || 'Nom du modèle'}
-          />
-        </label>
-
-        <label>
-          Clé API
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(event) => handleSaveApiKey(event.target.value)}
-            placeholder={
-              provider === 'groq'
-                ? 'gsk_...'
-                : provider === 'openai'
-                  ? 'sk-...'
-                  : 'clé API'
-            }
-          />
-        </label>
-
-        <p>
-          Tu peux changer de fournisseur, de modèle et de clé quand tu veux.
-          Ces valeurs sont sauvegardées localement dans ton navigateur.
-        </p>
-      </div>
-
-      <div className="ai-assistant__examples">
-        {DEFAULT_EXAMPLES.map((example) => (
-          <button
-            key={example}
-            type="button"
-            onClick={() => setPrompt(example)}
-          >
-            {example}
+    <div className="page">
+      <PageHeader
+        icon="✨"
+        title="Assistant"
+        subtitle="Demandez des recettes, un menu complet ou un plan de meal prep. L’assistant connaît vos recettes, votre semaine et les profils du logis."
+        actions={
+          <button type="button" className="btn btn--parchment" onClick={() => setShowSettings((v) => !v)} aria-expanded={showSettings}>
+            ⚙ {configured ? `${provider.label} · ${model}` : 'Configurer'}
           </button>
-        ))}
-      </div>
+        }
+      />
 
-      <form className="ai-assistant__form" onSubmit={handleSubmit}>
-        <textarea
-          value={prompt}
-          onChange={(event) => setPrompt(event.target.value)}
-          placeholder="Ex. Génère-moi un menu hebdomadaire avec les fiches disponibles, en évitant les soupers trop lourds la semaine."
-          rows={6}
-        />
-
-        <button type="submit" disabled={busy}>
-          {busy ? 'L’AI réfléchit...' : 'Envoyer à l’AI'}
-        </button>
-      </form>
-
-      {error && <p className="ai-assistant__error">{error}</p>}
-
-      <div className="ai-assistant__conversation">
-        {messages.length === 0 && (
-          <p className="ai-assistant__empty">
-            Aucune conversation pour l’instant.
-          </p>
-        )}
-
-        {messages.map((message, index) => (
-          <article
-            key={`${message.role}-${index}`}
-            className={`ai-assistant__message ai-assistant__message--${message.role}`}
-          >
-            <strong>{message.role === 'user' ? 'Toi' : 'AI'}</strong>
-            <p>{message.content}</p>
-          </article>
-        ))}
-      </div>
-
-      {lastResult && (
-        <div className="ai-assistant__result">
-          <h3>Proposition prête à appliquer</h3>
-
-          <p>{lastResult.message}</p>
-
-          <ul>
-            <li>
-              Nouvelles fiches:{' '}
-              {Array.isArray(lastResult.createMeals)
-                ? lastResult.createMeals.length
-                : 0}
-            </li>
-            <li>
-              Fiches modifiées:{' '}
-              {Array.isArray(lastResult.updateMeals)
-                ? lastResult.updateMeals.length
-                : 0}
-            </li>
-            <li>
-              Menu hebdomadaire: {lastResult.weeklyMenu ? 'oui' : 'non'}
-            </li>
-            <li>
-              Plan meal prep: {lastResult.mealPrepPlan ? 'oui' : 'non'}
-            </li>
-          </ul>
-
-          {lastResult.mealPrepPlan && (
-            <div className="ai-assistant__meal-prep">
-              <h4>Plan meal prep proposé</h4>
-              <pre>{lastResult.mealPrepPlan}</pre>
-            </div>
+      {showSettings && (
+        <Card title="Connexion à l’IA" icon="🔑" className="ai-settings">
+          <div className="field-row">
+            <label className="field">
+              <span>Fournisseur</span>
+              <select className="input" value={providerId} onChange={(e) => changeProvider(e.target.value)}>
+                {Object.entries(PROVIDERS).map(([id, p]) => (
+                  <option key={id} value={id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Modèle</span>
+              <input className="input" value={model} onChange={(e) => save('model', setModel)(e.target.value)} placeholder={provider.model || 'nom du modèle'} />
+            </label>
+            <label className="field">
+              <span>Clé API</span>
+              <input className="input" type="password" autoComplete="off" value={apiKey} onChange={(e) => save('api_key', setApiKey)(e.target.value)} placeholder={provider.keyHint} />
+            </label>
+          </div>
+          {providerId === 'custom' && (
+            <label className="field">
+              <span>Adresse de l’API (compatible OpenAI)</span>
+              <input className="input" value={customEndpoint} onChange={(e) => save('custom_endpoint', setCustomEndpoint)(e.target.value)} placeholder="https://…/v1/chat/completions" />
+            </label>
           )}
-
-          <details>
-            <summary>Voir le JSON complet</summary>
-            <pre>{JSON.stringify(lastResult, null, 2)}</pre>
-          </details>
-
-          <button type="button" onClick={handleApplyLastResult}>
-            Appliquer les changements
-          </button>
-        </div>
+          <p className="hint">
+            🔒 La clé reste dans ce navigateur et n’est envoyée qu’au fournisseur choisi. N’utilisez pas cette page sur un ordinateur partagé.
+          </p>
+          {configured && (
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => setShowSettings(false)}>
+              ✓ Terminé
+            </button>
+          )}
+        </Card>
       )}
-    </section>
+
+      <div className="ai-layout">
+        <Card className="ai-chat">
+          <div className="ai-log" ref={logRef} aria-live="polite">
+            {messages.length === 0 && (
+              <div className="ai-welcome">
+                <span aria-hidden="true">🔮</span>
+                <p>Par où commencer ? Essayez une de ces demandes :</p>
+                <div className="ai-examples">
+                  {EXAMPLES.map((ex) => (
+                    <button key={ex} type="button" className="chip" onClick={() => setPrompt(ex)}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`bubble bubble--${m.role}`}>
+                <p>{m.content}</p>
+                {m.questions?.length > 0 && (
+                  <ul>
+                    {m.questions.map((q) => (
+                      <li key={q}>{q}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+            {busy && (
+              <div className="bubble bubble--assistant bubble--typing" aria-label="L’assistant réfléchit">
+                <span />
+                <span />
+                <span />
+              </div>
+            )}
+          </div>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <form className="ai-form" onSubmit={handleSubmit}>
+            <textarea
+              ref={promptRef}
+              className="input"
+              rows={3}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e);
+              }}
+              placeholder="Ex. Génère le menu de la semaine en évitant les soupers trop lourds du lundi au jeudi."
+              aria-label="Votre demande"
+            />
+            <button type="submit" className="btn btn--primary" disabled={busy || !prompt.trim()}>
+              {busy ? 'Réflexion…' : 'Envoyer ➤'}
+            </button>
+          </form>
+        </Card>
+
+        <aside>
+          {pending ? (
+            <Card title="Proposition à appliquer" icon="📦" className="ai-pending">
+              <ul className="ai-summary">
+                {pending.createMeals?.length > 0 && (
+                  <li>
+                    <strong>{pending.createMeals.length}</strong> nouvelle(s) recette(s)
+                    <small>{pending.createMeals.map((m) => m.name).join(', ')}</small>
+                  </li>
+                )}
+                {pending.updateMeals?.length > 0 && (
+                  <li>
+                    <strong>{pending.updateMeals.length}</strong> recette(s) mise(s) à jour
+                  </li>
+                )}
+                {pending.weeklyMenu && <li>🗓 Menu de la semaine pour « {menu.name} »</li>}
+                {pending.mealPrepPlan && <li>🧑‍🍳 Plan de meal prep</li>}
+              </ul>
+              <details>
+                <summary>Voir le détail technique</summary>
+                <pre>{JSON.stringify(pending, null, 2)}</pre>
+              </details>
+              <div className="toolbar">
+                <button type="button" className="btn btn--primary" onClick={applyPending}>
+                  ✓ Appliquer
+                </button>
+                <button type="button" className="btn btn--ghost" onClick={() => setPending(null)}>
+                  Ignorer
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <Card title="Ce que l’assistant voit" icon="👁">
+              <ul className="ai-summary">
+                <li>
+                  <strong>{meals.length}</strong> recettes
+                </li>
+                <li>
+                  🗓 Semaine « {menu.name} »
+                </li>
+                <li>
+                  <strong>{members.filter((m) => m.activeProfile).length}</strong> profils actifs
+                  <button type="button" className="link" onClick={() => onGoTo('logis')}>
+                    Voir
+                  </button>
+                </li>
+              </ul>
+              <p className="hint">Rien n’est modifié sans votre accord : chaque proposition s’applique en un clic.</p>
+            </Card>
+          )}
+        </aside>
+      </div>
+    </div>
   );
 }

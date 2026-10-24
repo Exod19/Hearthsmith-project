@@ -1,147 +1,171 @@
-import React from "react";
+// =============================================================
+//  MealCard.jsx — Tuile de repas, fiche détaillée et sélecteur
+// =============================================================
 
-export function MealCardDetail({ meal, onClose }) {
-  if (!meal) {
-    return null;
-  }
+import { useMemo, useState } from 'react';
+import { MACROS, MEAL_TYPES } from '../data/defaults.js';
+import { MealImage, Modal } from './ui.jsx';
 
+const typeLabels = (meal) =>
+  (meal.mealTypes || []).map((id) => MEAL_TYPES.find((t) => t.id === id)?.label || id).join(' · ');
+
+export function MacroLine({ meal, compact = false }) {
+  const { calories } = meal.macros || {};
+  const protein = compact ? '' : meal.macros?.protein;
+  if (!calories && !protein) return null;
   return (
-    <div className="modal-backdrop">
-      <article className="modal">
-        <button className="modal__close" type="button" onClick={onClose}>
-          ×
-        </button>
-
-        <div className="detail">
-          <div className="detail__hero">
-            {meal.image ? (
-              <img className="detail__img" src={meal.image} alt={meal.name || "Repas"} />
-            ) : (
-              <div className="meal-img meal-img--placeholder">
-                <span className="meal-img__emoji">🍽️</span>
-              </div>
-            )}
-          </div>
-
-          <div className="detail__head">
-            <div className="meal-tile__type">{meal.type || "Repas"}</div>
-
-            <h2 className="detail__name">
-              {meal.name || "Repas sans nom"}
-            </h2>
-
-            {meal.note && (
-              <p className="detail__note">{meal.note}</p>
-            )}
-
-            <div className="detail__facts">
-              {meal.time && <span>⏱️ {meal.time} min</span>}
-              {meal.servings && <span>🍴 {meal.servings} portions</span>}
-            </div>
-          </div>
-
-          {meal.macros && (
-            <div className="detail__macros">
-              <strong>Valeurs approximatives</strong>
-
-              <div className="macro-grid">
-                <div>
-                  <span className="macro-num">{meal.macros.kcal || 0}</span>
-                  <span className="macro-lbl">kcal</span>
-                </div>
-                <div>
-                  <span className="macro-num">{meal.macros.protein || 0}</span>
-                  <span className="macro-lbl">protéines</span>
-                </div>
-                <div>
-                  <span className="macro-num">{meal.macros.carbs || 0}</span>
-                  <span className="macro-lbl">glucides</span>
-                </div>
-                <div>
-                  <span className="macro-num">{meal.macros.fat || 0}</span>
-                  <span className="macro-lbl">lipides</span>
-                </div>
-                <div>
-                  <span className="macro-num">{meal.macros.fiber || 0}</span>
-                  <span className="macro-lbl">fibres</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="detail__columns">
-            <div className="detail__col">
-              <h3>Ingrédients</h3>
-
-              {Array.isArray(meal.ingredients) && meal.ingredients.length > 0 ? (
-                <ul className="ingredient-list">
-                  {meal.ingredients.map((ingredient, index) => (
-                    <li key={index}>
-                      <span className="ingredient-qty">
-                        {ingredient.quantity || ingredient.qty || ""} {ingredient.unit || ""}
-                      </span>{" "}
-                      {ingredient.name || ingredient}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">Aucun ingrédient indiqué.</p>
-              )}
-            </div>
-
-            <div className="detail__col">
-              <h3>Préparation</h3>
-
-              {Array.isArray(meal.steps) && meal.steps.length > 0 ? (
-                <ol className="step-list">
-                  {meal.steps.map((step, index) => (
-                    <li key={index}>{step}</li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="muted">Aucune étape indiquée.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </article>
-    </div>
+    <span className="macro-line">
+      {calories ? `${calories} kcal` : ''}
+      {calories && protein ? ' · ' : ''}
+      {protein ? `${protein} g prot.` : ''}
+    </span>
   );
 }
 
-export default function MealCard({ meal, onClick }) {
-  if (!meal) {
-    return null;
-  }
+export default function MealCard({ meal, image, onOpen, active }) {
+  return (
+    <button type="button" className={`meal-card ${active ? 'is-active' : ''}`} onClick={() => onOpen(meal.id)}>
+      <MealImage meal={meal} image={image} />
+      <span className="meal-card__body">
+        <span className="meal-card__type">{typeLabels(meal) || 'Repas'}</span>
+        <strong className="meal-card__name">{meal.name || 'Repas sans nom'}</strong>
+        <span className="meal-card__meta">
+          <MacroLine meal={meal} />
+          {meal.prepTime ? <span>⏱ {meal.prepTime} min</span> : null}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+export function MealDetail({ meal, image, members, onClose, onEdit }) {
+  const steps = (meal.instructions || '').split('\n').map((s) => s.trim()).filter(Boolean);
+  const people = (meal.assignedTo || []).map((id) => members.find((m) => m.id === id)?.name).filter(Boolean);
 
   return (
-    <button className="meal-tile" type="button" onClick={() => onClick?.(meal)}>
-      {meal.image ? (
-        <img className="meal-img" src={meal.image} alt={meal.name || "Repas"} />
-      ) : (
-        <div className="meal-img meal-img--placeholder">
-          <span className="meal-img__emoji">🍽️</span>
-        </div>
-      )}
-
-      <div className="meal-tile__body">
-        <div className="meal-tile__type">{meal.type || "Repas"}</div>
-
-        <h3 className="meal-tile__name">
-          {meal.name || "Repas sans nom"}
-        </h3>
-
-        <div className="meal-tile__meta">
-          {meal.time && <span>{meal.time} min</span>}
-          {meal.servings && <span>{meal.servings} portions</span>}
-        </div>
-
-        {meal.macros && (
-          <div className="macro-strip">
-            {meal.macros.kcal || 0} kcal · {meal.macros.protein || 0}g prot.
+    <Modal
+      title={meal.name || 'Repas sans nom'}
+      onClose={onClose}
+      size="lg"
+      footer={
+        onEdit && (
+          <button type="button" className="btn btn--primary" onClick={() => onEdit(meal.id)}>
+            ✎ Modifier la fiche
+          </button>
+        )
+      }
+    >
+      <div className="detail">
+        <MealImage meal={meal} image={image} className="detail__image" />
+        <div className="detail__summary">
+          <p className="detail__type">{typeLabels(meal) || 'Repas'}</p>
+          <div className="detail__facts">
+            {meal.prepTime ? <span>⏱ {meal.prepTime} min</span> : null}
+            {meal.servings ? <span>🍴 {meal.servings} portions</span> : null}
+            <span>👥 {people.length ? people.join(', ') : 'Toute la famille'}</span>
           </div>
+          <dl className="macro-grid">
+            {MACROS.map((m) => (
+              <div key={m.key}>
+                <dt>{m.label}</dt>
+                <dd>
+                  {meal.macros?.[m.key] || '—'}
+                  {meal.macros?.[m.key] ? <small> {m.unit}</small> : null}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="hint">Valeurs par portion, approximatives.</p>
+        </div>
+      </div>
+
+      <div className="detail__columns">
+        <section>
+          <h3>Ingrédients</h3>
+          {meal.ingredients?.length ? (
+            <ul className="ingredient-list">
+              {meal.ingredients.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">Aucun ingrédient indiqué.</p>
+          )}
+        </section>
+        <section>
+          <h3>Préparation</h3>
+          {steps.length ? (
+            <ol className="step-list">
+              {steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="muted">Aucune étape indiquée.</p>
+          )}
+        </section>
+      </div>
+      {meal.notes && <p className="detail__notes">📝 {meal.notes}</p>}
+    </Modal>
+  );
+}
+
+/** Choix d'un repas pour une case du menu, avec recherche et filtre par type. */
+export function MealPicker({ title, meals, images, preferredType, onPick, onClose, onCreate }) {
+  const [query, setQuery] = useState('');
+  const [onlyType, setOnlyType] = useState(Boolean(preferredType));
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return meals
+      .filter((m) => !onlyType || !preferredType || m.mealTypes?.includes(preferredType))
+      .filter((m) => !q || m.name?.toLowerCase().includes(q))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+  }, [meals, query, onlyType, preferredType]);
+
+  const typeLabel = MEAL_TYPES.find((t) => t.id === preferredType)?.label;
+
+  return (
+    <Modal title={title} onClose={onClose} size="lg">
+      <div className="picker__bar">
+        <input
+          className="input"
+          type="search"
+          autoFocus
+          placeholder="Rechercher une recette…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {typeLabel && (
+          <label className="switch">
+            <input type="checkbox" checked={onlyType} onChange={(e) => setOnlyType(e.target.checked)} />
+            <span>Seulement « {typeLabel} »</span>
+          </label>
         )}
       </div>
-    </button>
+
+      {results.length ? (
+        <div className="picker__grid">
+          {results.map((meal) => (
+            <MealCard key={meal.id} meal={meal} image={images[meal.id]} onOpen={onPick} />
+          ))}
+        </div>
+      ) : (
+        <p className="muted picker__empty">
+          Aucune recette ne correspond.{' '}
+          {onlyType && typeLabel && (
+            <button type="button" className="link" onClick={() => setOnlyType(false)}>
+              Voir tous les types
+            </button>
+          )}
+        </p>
+      )}
+
+      {onCreate && (
+        <button type="button" className="btn btn--ghost picker__create" onClick={() => onCreate(query)}>
+          ＋ Créer une nouvelle recette{query ? ` « ${query} »` : ''}
+        </button>
+      )}
+    </Modal>
   );
 }
