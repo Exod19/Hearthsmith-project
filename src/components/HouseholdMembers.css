@@ -12,20 +12,64 @@
     --hs-line: rgba(91, 54, 20, 0.28);
     --hs-shadow: 0 14px 34px rgba(43, 22, 8, 0.18);
   }
+
+  /* =============================================================
+   HearthSmith assets
+   Les fichiers sont dans /public/hearthsmith/textures/
+   En CSS, on les appelle sans /public.
+============================================================= */
+
+.hs-household-page {
+    --texture-parchment-main: url('/hearthsmith/textures/parchment-bg.webp');
+    --texture-parchment-light: url('/hearthsmith/textures/parchment-light.webp');
+    --texture-parchment-aged: url('/hearthsmith/textures/parchment-aged.webp');
+    --texture-dark-wood: url('/hearthsmith/textures/dark-wood-bg.webp');
+    --texture-leather: url('/hearthsmith/textures/leather-bg.webp');
+    --texture-green-metal: url('/hearthsmith/textures/green-metal.webp');
+    --texture-bronze-metal: url('/hearthsmith/textures/bronze-metal.webp');
+  
+    min-height: 100%;
+    padding: 22px;
+    color: var(--hs-ink);
+  
+    background-color: #ead2a5;
+    background-image:
+      radial-gradient(circle at 18% 8%, rgba(255, 248, 220, 0.78), transparent 34%),
+      radial-gradient(circle at 82% 0%, rgba(137, 80, 24, 0.2), transparent 36%),
+      linear-gradient(135deg, rgba(255, 242, 204, 0.25), rgba(122, 72, 23, 0.14)),
+      var(--texture-parchment-main);
+    background-size:
+      auto,
+      auto,
+      auto,
+      760px 760px;
+    background-repeat:
+      no-repeat,
+      no-repeat,
+      no-repeat,
+      repeat;
+    background-attachment: scroll;
+  }
   
   .hs-household-page {
     min-height: 100%;
     padding: 22px;
     color: var(--hs-ink);
-    background:
-      radial-gradient(circle at 20% 8%, rgba(255, 246, 216, 0.95), transparent 35%),
-      radial-gradient(circle at 80% 0%, rgba(193, 129, 45, 0.14), transparent 32%),
-      linear-gradient(135deg, #f6ecd7 0%, #e9cf9f 100%);
+  
+    background-color: #ead2a5;
     background-image:
-      url('/hearthsmith/parchment-bg.webp'),
-      radial-gradient(circle at 20% 8%, rgba(255, 246, 216, 0.95), transparent 35%),
-      linear-gradient(135deg, #f6ecd7 0%, #e9cf9f 100%);
-    background-size: cover, auto, auto;
+      radial-gradient(circle at 20% 8%, rgba(255, 248, 222, 0.72), transparent 36%),
+      radial-gradient(circle at 80% 0%, rgba(133, 78, 25, 0.16), transparent 34%),
+      url('/hearthsmith/textures/parchment-bg.webp');
+    background-size:
+      auto,
+      auto,
+      720px 720px;
+    background-repeat:
+      no-repeat,
+      no-repeat,
+      repeat;
+    background-attachment: scroll;
   }
   
   .hs-household-header {
@@ -35,12 +79,21 @@
     align-items: center;
     margin-bottom: 18px;
     padding: 18px 24px;
-    border: 1px solid var(--hs-line);
+    border: 1px solid rgba(91, 54, 20, 0.28);
     border-radius: 10px;
     box-shadow: var(--hs-shadow);
-    background:
-      linear-gradient(180deg, rgba(255, 248, 225, 0.9), rgba(239, 211, 161, 0.68)),
-      url('/hearthsmith/parchment-bg.webp');
+  
+    background-color: #f2dfb9;
+    background-image:
+      linear-gradient(180deg, rgba(255, 250, 232, 0.82), rgba(225, 187, 122, 0.34)),
+      var(--texture-parchment-light);
+    background-size:
+      auto,
+      620px 620px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
   }
   
   .hs-title-row {
@@ -85,15 +138,27 @@
   }
   
   .hs-frame-card,
-  .hs-scroll-card {
-    position: relative;
-    border: 1px solid var(--hs-line);
-    border-radius: 12px;
-    background:
-      linear-gradient(180deg, rgba(255, 250, 232, 0.88), rgba(244, 222, 184, 0.78)),
-      url('/hearthsmith/parchment-bg.webp');
-    box-shadow: 0 8px 22px rgba(43, 22, 8, 0.11);
-  }
+.hs-scroll-card {
+  position: relative;
+  border: 1px solid rgba(91, 54, 20, 0.28);
+  border-radius: 12px;
+
+  background-color: rgba(248, 234, 203, 0.94);
+  background-image:
+    linear-gradient(180deg, rgba(255, 250, 232, 0.82), rgba(236, 208, 161, 0.56)),
+    var(--texture-parchment-light);
+  background-size:
+    auto,
+    560px 560px;
+  background-repeat:
+    no-repeat,
+    repeat;
+  background-blend-mode: normal, multiply;
+
+  box-shadow:
+    0 8px 22px rgba(43, 22, 8, 0.11),
+    inset 0 0 0 1px rgba(255, 246, 219, 0.38);
+}
   
   .hs-frame-card::before,
   .hs-frame-card::after {
@@ -122,6 +187,46 @@
   .hs-member-list {
     padding: 18px;
     min-height: 680px;
+  
+    background-color: #2a170d;
+    background-image:
+      linear-gradient(180deg, rgba(74, 43, 20, 0.72), rgba(24, 13, 7, 0.82)),
+      var(--texture-dark-wood);
+    background-size:
+      auto,
+      620px 620px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
+  
+    color: #f8e4ba;
+    border-color: rgba(206, 151, 78, 0.38);
+  }
+
+  .hs-member-list h2 {
+    color: #f8e4ba;
+  }
+  
+  .hs-member-list .hs-member-card {
+    color: #f8e4ba;
+    border-bottom-color: rgba(232, 191, 125, 0.2);
+  }
+  
+  .hs-member-list .hs-member-card small {
+    color: rgba(255, 235, 196, 0.72);
+  }
+  
+  .hs-member-list .hs-member-card:hover,
+  .hs-member-list .hs-member-card.is-active {
+    border-color: rgba(232, 191, 125, 0.5);
+    background:
+      linear-gradient(90deg, rgba(36, 79, 54, 0.74), rgba(36, 79, 54, 0.36));
+  }
+  
+  .hs-member-list .hs-add-member-card {
+    color: rgba(255, 235, 196, 0.78);
+    border-color: rgba(232, 191, 125, 0.32);
   }
   
   .hs-member-list h2,
@@ -487,9 +592,24 @@
     gap: 16px;
     align-items: center;
     padding: 16px 18px;
-    border: 1px solid rgba(166, 58, 36, 0.36);
+    border: 1px solid rgba(166, 58, 36, 0.42);
     border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255, 234, 214, 0.95), rgba(243, 202, 168, 0.55));
+  
+    background-color: #ecc29a;
+    background-image:
+      linear-gradient(180deg, rgba(255, 231, 208, 0.82), rgba(205, 111, 73, 0.18)),
+      var(--texture-parchment-aged);
+    background-size:
+      auto,
+      620px 620px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
+  
+    box-shadow:
+      0 8px 18px rgba(98, 45, 23, 0.12),
+      inset 0 0 0 1px rgba(255, 244, 220, 0.32);
   }
   
   .hs-warning-icon {
@@ -562,12 +682,27 @@
     padding: 12px;
     border: 1px solid rgba(91, 54, 20, 0.18);
     border-radius: 12px;
-    background: rgba(255, 247, 224, 0.78);
+  
+    background-color: rgba(255, 247, 224, 0.82);
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(215, 178, 114, 0.12)),
+      var(--texture-parchment-light);
+    background-size:
+      auto,
+      360px 360px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
   }
   
   .hs-message.user {
     justify-self: end;
-    background: #d8dfbd;
+  
+    background-color: #d8dfbd;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(65, 91, 46, 0.12)),
+      var(--texture-parchment-light);
   }
   
   .hs-message.ai {
@@ -594,22 +729,34 @@
   }
   
   .hs-chat-form input,
-  .hs-title-input,
-  .hs-inline-fields input,
-  .hs-field input,
-  .hs-macro input,
-  .hs-list-block textarea,
-  .hs-objective textarea,
-  .hs-severity select {
-    width: 100%;
-    min-width: 0;
-    border: 1px solid rgba(91, 54, 20, 0.28);
-    border-radius: 8px;
-    padding: 9px 10px;
-    background: rgba(255, 251, 239, 0.8);
-    color: var(--hs-ink);
-    font: inherit;
-  }
+.hs-title-input,
+.hs-inline-fields input,
+.hs-field input,
+.hs-macro input,
+.hs-list-block textarea,
+.hs-objective textarea,
+.hs-severity select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(91, 54, 20, 0.28);
+  border-radius: 8px;
+  padding: 9px 10px;
+
+  background-color: rgba(255, 251, 239, 0.84);
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(230, 198, 141, 0.12)),
+    var(--texture-parchment-light);
+  background-size:
+    auto,
+    360px 360px;
+  background-repeat:
+    no-repeat,
+    repeat;
+  background-blend-mode: normal, multiply;
+
+  color: var(--hs-ink);
+  font: inherit;
+}
   
   .hs-objective textarea,
   .hs-list-block textarea {
@@ -666,24 +813,60 @@
   }
   
   .hs-btn-primary {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)),
-      var(--hs-green);
+    background-color: var(--hs-green);
     background-image:
-      url('/hearthsmith/button-metal.webp'),
-      linear-gradient(180deg, var(--hs-green-2), var(--hs-green));
-    background-size: cover;
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0.22)),
+      var(--texture-green-metal);
+    background-size:
+      auto,
+      360px 160px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
+  
     color: #fff8de;
-    box-shadow: 0 5px 12px rgba(43, 22, 8, 0.22);
+    border-color: rgba(24, 54, 34, 0.55);
+    box-shadow:
+      0 5px 12px rgba(43, 22, 8, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
   
   .hs-btn-parchment {
-    background: linear-gradient(180deg, #fff6df, #e8c894);
+    background-color: #ead0a0;
+    background-image:
+      linear-gradient(180deg, rgba(255, 249, 227, 0.86), rgba(204, 158, 87, 0.24)),
+      var(--texture-parchment-aged);
+    background-size:
+      auto,
+      420px 420px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
+  
+    border-color: rgba(91, 54, 20, 0.38);
+    color: var(--hs-ink);
+    box-shadow:
+      0 3px 8px rgba(43, 22, 8, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   
   .hs-btn-danger {
-    background: linear-gradient(180deg, #efb391, #a63a24);
+    background-color: var(--hs-red);
+    background-image:
+      linear-gradient(180deg, rgba(255, 215, 180, 0.24), rgba(74, 18, 10, 0.22)),
+      var(--texture-leather);
+    background-size:
+      auto,
+      420px 420px;
+    background-repeat:
+      no-repeat,
+      repeat;
+    background-blend-mode: normal, multiply;
+  
     color: #fff5e0;
+    border-color: rgba(95, 27, 17, 0.55);
   }
   
   .hs-btn-ghost {
@@ -738,5 +921,60 @@
   
     .hs-warning-banner {
       grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 980px) {
+    .hs-household-page {
+      padding: 14px;
+      background-size:
+        auto,
+        auto,
+        auto,
+        560px 560px;
+    }
+  
+    .hs-frame-card,
+    .hs-scroll-card {
+      background-size:
+        auto,
+        460px 460px;
+    }
+  
+    .hs-household-header {
+      background-size:
+        auto,
+        520px 520px;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .hs-household-page {
+      padding: 10px;
+      background-size:
+        auto,
+        auto,
+        auto,
+        420px 420px;
+    }
+  
+    .hs-frame-card,
+    .hs-scroll-card {
+      border-radius: 10px;
+      background-size:
+        auto,
+        380px 380px;
+    }
+  
+    .hs-member-list {
+      min-height: auto;
+      background-size:
+        auto,
+        440px 440px;
+    }
+  
+    .hs-household-header {
+      background-size:
+        auto,
+        420px 420px;
     }
   }

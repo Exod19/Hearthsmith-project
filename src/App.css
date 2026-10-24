@@ -992,3 +992,37 @@ button {
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 980px) {
+  .hs-household-page {
+    padding: 14px;
+    background-size:
+      auto,
+      auto,
+      560px 560px;
+  }
+
+  .hs-frame-card,
+  .hs-scroll-card {
+    background-size:
+      auto,
+      460px 460px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hs-household-page {
+    padding: 10px;
+    background-size:
+      auto,
+      auto,
+      420px 420px;
+  }
+
+  .hs-frame-card,
+  .hs-scroll-card {
+    border-radius: 10px;
+    background-size:
+      auto,
+      380px 380px;
+  }
+}
