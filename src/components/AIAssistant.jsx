@@ -23,7 +23,8 @@ Règles :
 - Si tu estimes des macros, indique-le dans « notes ».
 - mealTypes possibles : dejeuner, diner, souper, collation.
 - assignedTo : ids des membres (laisser vide si pour tout le monde).
-- ingredients : tableau de chaînes, quantité en premier (ex. « 200 g poulet »).
+- ingredients : tableau de chaînes « quantité unité produit, préparation » (ex. « 1 tête de brocoli, en fleurettes »,
+  « 200 g poulet »). Le produit vient avant la virgule ; la préparation après.
 - instructions : une étape par ligne.
 - Pour un menu, utilise les ids des fiches existantes ou de celles que tu crées
   (donne alors un id unique aux nouvelles fiches, ex. « ai_poulet_citron »).

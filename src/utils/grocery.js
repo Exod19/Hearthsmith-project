@@ -19,10 +19,16 @@ export function mealIdsOfDay(day) {
 
 export function generateGroceryList(menu, mealsById = {}) {
   const map = new Map();
+  const staples = new Set();
 
   const add = ({ line, mealName, dayLabel, category }) => {
     const parsed = parseIngredient(line);
     if (!parsed) return;
+    // Sel, poivre, eau… : toujours à la maison, on ne les achète pas.
+    if (parsed.staple) {
+      parsed.basics.forEach((w) => staples.add(w));
+      return;
+    }
     const key = `${singular(parsed.name)}|${parsed.unit}`;
     let item = map.get(key);
     if (!item) {
@@ -59,5 +65,5 @@ export function generateGroceryList(menu, mealsById = {}) {
     items: items.filter((i) => i.category === category).sort((a, b) => a.name.localeCompare(b.name, 'fr')),
   })).filter((g) => g.items.length);
 
-  return { items, byCategory };
+  return { items, byCategory, staples: [...staples].sort() };
 }

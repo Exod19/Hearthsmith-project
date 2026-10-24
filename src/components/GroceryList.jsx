@@ -148,6 +148,10 @@ export default function GroceryList({ menu, groceryList, checks, prices, actions
             })}
           </div>
 
+          {groceryList.staples.length > 0 && (
+            <p className="hint no-print">🏠 Déjà à la maison, non ajoutés : {groceryList.staples.join(', ')}.</p>
+          )}
+
           {(menu.extraGroceries || []).length > 0 && (
             <p className="hint no-print">
               Articles ajoutés à la main :{' '}

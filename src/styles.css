@@ -1427,6 +1427,7 @@ textarea.input {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.2rem;
+  align-items: start;
 }
 
 .detail__columns h3 {
@@ -1505,6 +1506,33 @@ textarea.input {
   padding: 0 0.4rem;
   font-family: var(--font-display);
   font-weight: 600;
+}
+
+.shopping-preview {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 250, 235, 0.6);
+}
+
+.shopping-preview > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-dark);
+}
+
+.shopping-preview .tag {
+  font-style: normal;
+}
+
+.shopping-preview small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--ink-soft);
 }
 
 /* =============================================================

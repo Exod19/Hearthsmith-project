@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { MACROS, MEAL_TYPES } from '../data/defaults.js';
 import { resizeImageFile } from '../utils/files.js';
+import { formatQuantity, formatUnit, parseIngredient } from '../utils/ingredients.js';
 import { Chip, MealImage, Modal, useToast } from './ui.jsx';
 
 export default function MealEditor({ meal, image, members, actions, onClose }) {
@@ -165,6 +166,7 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
             placeholder={'Un ingrédient par ligne :\n700 g poulet\n2 tasses riz\n1 brocoli'}
           />
           <small className="hint">Écrivez la quantité en premier pour que l’épicerie additionne tout.</small>
+          <ShoppingPreview lines={meal.ingredients} />
         </label>
         <label className="field">
           <span>Préparation</span>
@@ -189,5 +191,27 @@ export default function MealEditor({ meal, image, members, actions, onClose }) {
         />
       </label>
     </Modal>
+  );
+}
+
+/** Ce que l'épicerie retiendra de chaque ligne (préparation retirée, produits de base exclus). */
+function ShoppingPreview({ lines = [] }) {
+  const parsed = lines.map(parseIngredient).filter(Boolean);
+  if (!parsed.length) return null;
+  const toBuy = parsed.filter((p) => !p.staple);
+  const home = parsed.filter((p) => p.staple);
+  return (
+    <div className="shopping-preview">
+      <span>Pour l’épicerie</span>
+      <div>
+        {toBuy.map((p, i) => (
+          <em key={i} className="tag" title={p.raw}>
+            {p.name}
+            {p.quantity ? ` · ${[formatQuantity(p.quantity), formatUnit(p.unit, p.quantity)].filter(Boolean).join(' ')}` : ''}
+          </em>
+        ))}
+        {home.length > 0 && <small> 🏠 déjà à la maison : {[...new Set(home.flatMap((p) => p.basics))].join(', ')}</small>}
+      </div>
+    </div>
   );
 }
