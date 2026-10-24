@@ -148,36 +148,81 @@ const PROCESSED = [
   'puree', 'saveur', 'aromatise', 'enrobe', 'frit', 'croustillant', 'nugget', 'burger', 'pate a', 'mijote', 'repas',
   'surgele', 'congele', 'bonbon', 'chocolat', 'creme glacee', 'cuit', 'fume', 'tranche', 'tartinade', 'hummus',
   'salami', 'margarine', 'yogourt', 'olive farcie', 'roti', 'gruau', 'confiture', 'vege', 'moutarde', 'cremeu',
-  'emiette', 'thon', 'ciboulette', 'chili', 'tasse', 'instantane', 'mayonnaise', 'the glace', 'caille', 'pomme de terre', 'pommes de terre',
+  'emiette', 'thon', 'ciboulette', 'chili', 'tasse', 'instantane', 'mayonnaise', 'the glace', 'caille', 'cannelle', 'erable',
 ];
 // Mots de format ou de qualité qui peuvent précéder le nom du produit.
 const DESCRIPTORS = new Set(['sac', 'jeune', 'feuille', 'grain', 'mini', 'gro', 'petit', 'biologique', 'bio', 'frai', 'fraiche', 'extra', 'panier', 'botte', 'barquette', 'format', 'club', 'paquet', 'boite', 'pot', 'bouteille', 'local', 'quebec', 'selection', 'irresistible', 'compliment', 'choix', 'president', 'naturellement', 'imparfait']);
 const FILLER = new Set(['de', 'des', 'du', 'la', 'le', 'les', 'et', 'en', 'au', 'aux', 'a', 'un', 'une', 'd', 'l', 'sans', 'avec']);
 
+// Formes équivalentes ramenées à une seule, des deux côtés (recette et produit) :
+// « boisson d'amande » = « lait d'amande », « pommes de terre » = « patates »…
+const CANON = [
+  [/\bboissons? (?:d'|de |aux? )?(amande|soya|soja|avoine|riz|coco|cajou)s?\b/g, 'lait $1'],
+  [/\blait d'(amande|avoine)s?\b/g, 'lait $1'],
+  [/\blait de (soya|soja|riz|coco)\b/g, 'lait $1'],
+  [/\bsoja\b/g, 'soya'],
+  [/\byaourts?\b/g, 'yogourt'],
+  [/\bpommes? de terre\b/g, 'patate'],
+  [/\bzucchinis?\b/g, 'courgette'],
+  [/\boignons? verts?\b/g, 'echalote'],
+  [/\b(fruits des champs|melange de petits fruits|baies)\b/g, 'petits fruits'],
+  [/\b(flocons? d'avoine|gruau)\b/g, 'avoine'],
+  [/\bfromage pizza\b/g, 'fromage'],
+  [/\b(spaghettinis?|spaghettis?|pennes?|fusillis?|rotinis?|macaronis?|linguines?|fettuccines?|farfalles?)\b/g, 'pates $1'],
+];
+
+export const canon = (text) => CANON.reduce((t, [re, to]) => t.replace(re, to), normalize(text).replace(/[’`]/g, "'"));
+
 const tokens = (text) =>
-  normalize(text)
+  canon(text)
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 1 && !FILLER.has(w))
     .map((w) => (w.length > 3 ? w.replace(/(s|x)$/, '') : w));
 
+// Autres façons dont les épiceries nomment un produit (recherches supplémentaires).
+const EXPANSIONS = [
+  [/lait d'amande/, ["boisson d'amande", 'boisson aux amandes']],
+  [/lait de so[yj]a/, ['boisson de soya', 'boisson soya']],
+  [/lait d'avoine/, ["boisson d'avoine"]],
+  [/fromage rape/, ['râpé', 'mozzarella râpé', 'fromage pizza']],
+  [/pommes? de terre|patate/, ['pommes de terre', 'patates']],
+  [/oignons? verts?/, ['échalote', 'oignons verts']],
+  [/courgette/, ['zucchini']],
+  [/petits fruits/, ['fruits des champs', 'petits fruits', 'bleuets']],
+  [/flocons d'avoine|gruau/, ["flocons d'avoine", 'avoine']],
+  [/^pates/, ['spaghetti', 'penne', 'fusilli']],
+  [/sauce so[yj]a/, ['sauce soya', 'sauce soja']],
+  [/yaourt/, ['yogourt']],
+  [/fecule de mais/, ['fécule de maïs']],
+];
+const COMMON_WORDS = new Set(['sans', 'avec', 'frais', 'fraiche', 'gros', 'petit', 'petits', 'rouge', 'vert', 'verte', 'blanc', 'blanche', 'noir', 'jaune', 'maigre', 'extra']);
+
 /**
- * Requêtes à essayer pour un ingrédient. La recherche de l'API est une
- * sous-chaîne sensible aux accents et aux apostrophes : on garde donc le texte
- * d'origine, puis le mot principal au singulier (« poivrons » → « poivron »).
+ * Requêtes à essayer, de la plus précise à la plus large. La recherche de l'API
+ * est une sous-chaîne sensible aux accents et aux apostrophes : on garde le
+ * texte d'origine, ses synonymes, le mot principal au singulier, puis les
+ * précisions distinctives (« sans lactose », « grelots »).
  */
 export function queriesFor(name) {
-  const clean = String(name).replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim();
-  const head = clean.split(/[\s']/).find((w) => w.length > 2 && !FILLER.has(normalize(w))) || clean;
+  const clean = String(name).replace(/[’`]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+  const norm = normalize(clean);
+  const words = clean.split(/[\s']/).filter((w) => w.length > 2 && !FILLER.has(normalize(w)));
+  const head = words[0] || clean;
   const singular = head.length > 4 ? head.replace(/(s|x)$/i, '') : head;
-  return [...new Set([clean.toLowerCase(), singular.toLowerCase()])].filter((q) => q.length >= 2);
+  const expansions = EXPANSIONS.filter(([re]) => re.test(norm)).flatMap(([, list]) => list);
+  const without = clean.match(/\bsans [a-zéèêàâîôûç]+/g) || [];
+  const others = words.slice(1).filter((w) => w.length >= 5 && !COMMON_WORDS.has(normalize(w)));
+  // Les sites écrivent l'apostrophe droite (') ou typographique (’) : on essaie les deux.
+  const curly = clean.includes("'") ? [clean.replace(/'/g, '’')] : [];
+  return [...new Set([clean, ...curly, ...expansions, singular, ...without, ...others])].filter((q) => q.length >= 2);
 }
 
 export function scoreProduct(product, query, category) {
   const q = tokens(query);
   const n = tokens(product.name);
   if (!q.length) return -Infinity;
-  const name = normalize(product.name);
+  const name = canon(product.name);
 
   const covered = q.filter((t) => n.some((w) => w.startsWith(t) || t.startsWith(w)));
   if (covered.length < Math.ceil(q.length * 0.67)) return -Infinity;
@@ -189,7 +234,7 @@ export function scoreProduct(product, query, category) {
   else score -= 2.5;
   score -= Math.max(0, n.length - q.length) * 0.5;
 
-  const queryText = normalize(query);
+  const queryText = canon(query);
   for (const word of PROCESSED) if (name.includes(word) && !queryText.includes(word)) score -= 2.5;
   if (UNWANTED.has(product.category) && !(category === 'Surgelés' && [57, 61].includes(product.category))) score -= 6;
   if (PREFERRED[category]) score += PREFERRED[category].includes(product.category) ? 2 : -2;
@@ -238,28 +283,117 @@ export function parseSize(size) {
     const [factor, base] = TO_BASE[m[2]];
     return { amount: Number(m[1]) * factor, base };
   }
-  const count = s.match(/^(\d+)\s*(un|unite|unites|pk|paquet|douzaine)?$/);
-  if (count) return { amount: Number(count[1]) * (count[2] === 'douzaine' ? 12 : 1), base: 'un' };
+  const bunch = s.match(/^(\d+)?\s*(botte|bouquet)s?\b/);
+  if (bunch) return { amount: Number(bunch[1] || 1), base: 'botte' };
+  // « 12un », « 6 oeufs », « 5poitrines », « 2perbarquette » : un nombre de pièces.
+  const count = s.match(/^(\d+)\s*(douzaines?|[a-z]+)?$/);
+  if (count) return { amount: Number(count[1]) * (count[2]?.startsWith('douzaine') ? 12 : 1), base: 'un' };
   return null;
 }
 
+// Poids moyen d'une unité (g), pour passer de « 2 carottes » à un sac de 1,36 kg.
+const UNIT_WEIGHT = [
+  ['chou-fleur', 800], ['chou', 1000], ['brocoli', 450], ['laitue', 450], ['celeri', 450], ['aubergine', 400],
+  ['patate douce', 300], ['concombre', 300], ['mangue', 300], ['courgette', 250], ['patate', 200], ['avocat', 200],
+  ['poitrine', 200], ['pomme', 180], ['poire', 180], ['orange', 180], ['poivron', 170], ['oignon', 150],
+  ['filet', 150], ['saumon', 150], ['cuisse', 150], ['tomate', 130], ['banane', 120], ['citron', 110],
+  ['carotte', 75], ['lime', 70], ['oeuf', 55], ['ail', 50], ['echalote', 30], ['champignon', 20],
+];
+// Poids d'une tasse (g) pour les ingrédients secs ; sinon 250 ml.
+const CUP_WEIGHT = [
+  ['epinard', 30], ['laitue', 50], ['champignon', 70], ['avoine', 90], ['brocoli', 90], ['fromage', 100], ['pates', 100],
+  ['chou-fleur', 100], ['haricots verts', 110], ['noix', 120], ['farine', 130], ['carotte', 130], ['amande', 140],
+  ['petits fruits', 150], ['bleuet', 150], ['fraise', 150], ['framboise', 150], ['oignon', 160], ['mais', 165],
+  ['pois chiche', 165], ['quinoa', 170], ['tomate', 180], ['riz', 190], ['lentille', 190], ['sucre', 200], ['cassonade', 220],
+];
+// Unités de recette qui désignent une pièce d'un poids connu.
+// Nombre de pièces dans une botte (fines herbes : une botte suffit).
+const PER_BUNCH = [['echalote', 7], ['radis', 12], ['carotte', 8], ['betterave', 4]];
+const PIECE_WEIGHT = { gousse: 5, branche: 50, filet: 150, tranche: 30, 'pincée': 0.5 };
+
+const lookup = (table, name) => {
+  const n = canon(name);
+  return table.find(([k]) => n.includes(k))?.[1] ?? null;
+};
+
+/** Besoin de la recette ramené en g, ml ou unités (avec équivalent en g si connu). */
 function neededBase(item) {
   if (!item.quantity) return null;
-  if (!item.unit) return { amount: item.quantity, base: 'un' };
+  const q = item.quantity;
+  const each = lookup(UNIT_WEIGHT, item.name);
+  if (!item.unit || item.unit === 'boîte' || item.unit === 'paquet') return { amount: q, base: 'un', grams: each ? q * each : null };
+  if (PIECE_WEIGHT[item.unit]) return { amount: q * PIECE_WEIGHT[item.unit], base: 'g', pieces: q };
+  if (item.unit === 'tasse') {
+    const cup = lookup(CUP_WEIGHT, item.name);
+    return cup ? { amount: q * cup, base: 'g' } : { amount: q * 250, base: 'ml' };
+  }
   const conv = TO_BASE[item.unit];
-  return conv ? { amount: item.quantity * conv[0], base: conv[1] } : null;
+  return conv ? { amount: q * conv[0], base: conv[1] } : null;
 }
 
-/** Nombre d'emballages pour couvrir le besoin (1 si on ne peut pas comparer). */
+/** « 0.76/100g », « 4.39/kg », « 1.99/lb », « 0.50/un » → prix par g, ml ou unité. */
+export function parseUnitPrice(raw) {
+  const m = normalize(raw || '').replace(',', '.').match(/([\d.]+)\s*\/\s*([\d.]*)\s*(kg|g|ml|l|lb|un|unite|ea)\b/);
+  if (!m) return null;
+  const qty = Number(m[2]) || 1;
+  if (['un', 'unite', 'ea'].includes(m[3])) return { price: Number(m[1]) / qty, base: 'un' };
+  const [factor, base] = TO_BASE[m[3]];
+  return { price: Number(m[1]) / (qty * factor), base };
+}
+
+const fmtAmount = (amount, base) => {
+  if (base === 'un') return `${Math.round(amount * 10) / 10} unité${amount > 1 ? 's' : ''}`;
+  if (amount >= 1000) return `${String(Math.round(amount / 100) / 10).replace('.', ',')} ${base === 'g' ? 'kg' : 'L'}`;
+  return `${Math.round(amount)} ${base}`;
+};
+
+/**
+ * Combien acheter pour couvrir la recette, et comment on l'a déterminé.
+ * Retourne { packs, estimated, byWeight?, cost?, need, cover }.
+ */
 export function packagesFor(item, product) {
   const need = neededBase(item);
-  const size = parseSize(product?.size) || (need?.base === 'un' ? parseSize(product?.name?.match(/\b\d+\s*(un|unites)\b/i)?.[0]) : null);
-  if (!need || !size || !size.amount) return { packs: 1, estimated: true };
-  // On tolère g ↔ ml (densité ≈ 1) : approximation suffisante pour l'épicerie.
-  const compatible = need.base === size.base || (need.base !== 'un' && size.base !== 'un');
-  if (!compatible) return { packs: 1, estimated: true };
-  const ratio = need.amount / size.amount;
-  return { packs: Math.min(12, Math.max(1, Math.ceil(ratio - 0.1))), estimated: need.base !== size.base };
+  const size = parseSize(product?.size) || parseSize(product?.name?.match(/\b\d+\s*(un|unites)\b/i)?.[0]);
+  const needLabel = need ? fmtAmount(need.amount, need.base) : null;
+
+  if (need && size?.base === 'botte') {
+    const per = lookup(PER_BUNCH, item.name);
+    const packs = per && need.base === 'un' ? Math.max(1, Math.ceil(need.amount / per)) : 1;
+    return { packs, estimated: !per, need: needLabel, cover: `${packs} × ${product.size}${per ? ` (≈ ${per} par botte)` : ''}` };
+  }
+
+  if (need && size?.amount) {
+    let needAmount = null;
+    let estimated = false;
+    if (need.base === size.base) needAmount = need.amount;
+    else if (need.base !== 'un' && size.base !== 'un') {
+      needAmount = need.amount; // g ↔ ml : densité ≈ 1
+      estimated = true;
+    } else if (need.base === 'un' && need.grams) {
+      needAmount = need.grams; // 2 carottes ≈ 150 g
+      estimated = true;
+    } else if (size.base === 'un') {
+      const each = lookup(UNIT_WEIGHT, item.name);
+      if (each) {
+        needAmount = need.amount / each; // 700 g de poulet ≈ 3,5 poitrines
+        estimated = true;
+      }
+    }
+    if (needAmount != null) {
+      const packs = Math.min(20, Math.max(1, Math.ceil(needAmount / size.amount - 0.1)));
+      return { packs, estimated, need: needLabel, cover: `${packs} × ${product.size} = ${fmtAmount(packs * size.amount, size.base)}` };
+    }
+  }
+
+  // Produit vendu au poids (sans format) : on paie la quantité exacte au prix unitaire.
+  const unit = parseUnitPrice(product?.unit);
+  if (need && unit && !size) {
+    let amount = null;
+    if (unit.base === need.base || (unit.base !== 'un' && need.base !== 'un')) amount = need.amount;
+    else if (unit.base !== 'un') amount = need.grams;
+    if (amount) return { packs: 1, byWeight: true, estimated: unit.base !== need.base, cost: amount * unit.price, need: needLabel, cover: `≈ ${fmtAmount(amount, unit.base === 'un' ? 'un' : unit.base)} au prix unitaire` };
+  }
+  return { packs: 1, estimated: true, need: needLabel, cover: product?.size ? `1 × ${product.size} (quantité à vérifier)` : 'format inconnu : quantité à vérifier' };
 }
 
 // ---------------------------------------------------------------
@@ -324,16 +458,26 @@ export function pickOffer(results, item) {
   const offers = ranked
     .filter((r) => r.score >= top - 1.5)
     .map(({ product }) => offerFor(item, product));
-  // Un produit sans format connu (souvent vendu au poids) n'est retenu que faute de mieux.
-  const sized = offers.filter((o) => parseSize(o.product.size));
-  const pool = sized.length ? sized : offers;
+  // On préfère les produits dont on sait couvrir la quantité ; les autres faute de mieux.
+  const known = offers.filter((o) => !o.uncertain);
+  const pool = known.length ? known : offers;
   return pool.reduce((a, b) => (b.cost < a.cost ? b : a));
 }
 
 export function offerFor(item, product, packsOverride) {
-  const { packs, estimated } = packagesFor(item, product);
-  const n = packsOverride || packs;
-  return { product, packs: n, cost: Math.round(n * product.price * 100) / 100, estimated: estimated && !packsOverride };
+  const q = packagesFor(item, product);
+  const n = packsOverride || q.packs;
+  const cost = q.byWeight && !packsOverride ? q.cost : n * product.price;
+  return {
+    product,
+    packs: n,
+    cost: Math.round(cost * 100) / 100,
+    estimated: q.estimated && !packsOverride,
+    byWeight: q.byWeight && !packsOverride,
+    need: q.need,
+    cover: packsOverride ? `${n} × ${product.size || 'format inconnu'} (choisi à la main)` : q.cover,
+    uncertain: q.cover?.includes('à vérifier'),
+  };
 }
 
 /** Prix actuel, dans ce magasin, d'un produit choisi à la main. */
@@ -343,21 +487,28 @@ export async function refreshPick(item, store, pick, packsOverride) {
   return current ? offerFor(item, { ...pick, ...current, id: pick.id, name: pick.name }, packsOverride) : null;
 }
 
-/** Cherche l'article dans un magasin (une ou deux requêtes, mises en cache). */
+/**
+ * Cherche l'article dans un magasin : on essaie les requêtes une à une et on
+ * s'arrête dès qu'un produit couvre tous les mots de l'ingrédient.
+ */
 export async function findOffer(item, store) {
-  const [phrase, head] = queriesFor(item.name);
-  let results = await searchStore(phrase, store);
-  const wanted = tokens(item.name).length * 3;
-  const top = rankProducts(results, item.name, item.category)[0];
+  const queries = queriesFor(item.name);
+  const full = tokens(item.name).length * 3 + 2;
+  let results = [];
   const merge = (more) => {
     const seen = new Set(results.map((r) => r.id));
     results = [...results, ...more.filter((r) => !seen.has(r.id))];
   };
-  if (head && (!top || top.score < wanted)) merge(await searchStore(head, store));
+  const good = () => (rankProducts(results, item.name, item.category)[0]?.score ?? -Infinity) >= full - 0.5;
+
+  for (const q of queries.slice(0, 6)) {
+    merge(await searchStore(q, store));
+    if (good()) break;
+  }
   // Mot courant (« citron ») : la recherche simple est tronquée, on cible le rayon.
   for (const category of (PREFERRED[item.category] || []).slice(0, 2)) {
     if (pickOffer(results, item)) break;
-    merge(await searchStore(head || phrase, store, category));
+    merge(await searchStore(queries.find((q) => !q.includes(' ')) || queries[0], store, category));
   }
   return { offer: pickOffer(results, item), results };
 }

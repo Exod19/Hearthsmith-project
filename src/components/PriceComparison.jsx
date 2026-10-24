@@ -339,6 +339,10 @@ export default function PriceComparison({ groceryList, checks, prices, actions }
                               </span>
                               <strong className="offer__cost">{money(offer.cost)}</strong>
                             </div>
+                            <small className={`offer__cover ${offer.uncertain ? 'is-uncertain' : ''}`}>
+                              {offer.need ? `Besoin ${offer.need} → ` : ''}
+                              {offer.cover}
+                            </small>
                             <div className="offer__badges">
                               {offer.product.discounted && <em className="badge badge--deal">Spécial</em>}
                               {isBest && <em className="badge badge--best">Meilleur prix</em>}

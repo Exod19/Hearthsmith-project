@@ -52,7 +52,7 @@ function parseQuantity(token) {
 }
 
 // Mots de comptage : « 1 tête de brocoli » = 1 brocoli (pas d'unité).
-const COUNT_WORDS = /^(tetes?|bottes?|bouquets?|morceaux?|brins?|poignees?|feuilles?|grappes?|epis?|sachets?|enveloppes?|cuilleree?s?|gros(se)?s?|petite?s?|moyen(ne)?s?)\s+(de |d'|d’|des )?/;
+const COUNT_WORDS = /^(tetes?|bottes?|bouquets?|morceaux?|brins?|poignees?|feuilles?|grappes?|epis?|sachets?|enveloppes?|cuilleree?s?|gros(se)?s?|petite?s?|moyen(ne)?s?)\s+(?!fruits|pois|pains|sel\b)(de |d'|d’|des )?/;
 
 // Ce qui décrit la préparation, pas l'achat (« séparé en fleurettes », « haché finement »).
 const PREP = new RegExp(
